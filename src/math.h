@@ -18,6 +18,7 @@ struct vec3 {
 	float x, y, z;
 
 	vec3() : x(0), y(0), z(0) {}
+	vec3(float _a) : x(_a), y(_a), z(_a) {}
 	vec3(float _x, float _y, float _z) : x(_x), y(_y), z(_z) {}
 	void print() {
 		std::cout << std::fixed << std::setprecision(3);

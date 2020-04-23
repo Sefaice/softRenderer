@@ -79,7 +79,7 @@ void InitLine(int x0, int y0, int x1, int y1) {
 
 void DrawLine(float* frameBuffer, int frameWidth, int frameHeight) {
 	for (int i = 0; i < pointsNum; i++) {
-		DrawPoint(points[i], 0, vec3(1.0, 0, 0));
+		DrawPoint(points[i], 0, vec3(1.0));
 	}
 }
 
@@ -93,7 +93,7 @@ float rfpart(float x) {
 }
 
 // wu's line algorithm
-void DrawLineWu(float x0, float y0, float x1, float y1) {
+void DrawLineWu(float x0, float y0, float x1, float y1, int backBufferWidth, int backBufferHeight) {
 	bool steep = abs(y1 - y0) > abs(x1 - x0); // if flip in first Quadrant
 
 	if (steep) {
@@ -117,12 +117,20 @@ void DrawLineWu(float x0, float y0, float x1, float y1) {
 	int xpxl1 = xend;
 	int ypxl1 = floor(yend);
 	if (steep) {
-		DrawPoint(vec2(ypxl1, xpxl1), 0, vec3(rfpart(yend) * xgap, 0, 0));
-		DrawPoint(vec2(ypxl1 + 1, xpxl1), 0, vec3(fpart(yend) * xgap, 0, 0));
+		if (ypxl1 >= 0 && ypxl1 < backBufferWidth && xpxl1 >= 0 && xpxl1 < backBufferHeight) {
+			DrawPoint(vec2(ypxl1, xpxl1), 0, vec3(rfpart(yend) * xgap));
+		}
+		if (ypxl1 + 1 >= 0 && ypxl1 + 1 < backBufferWidth && xpxl1 >= 0 && xpxl1 < backBufferHeight) {
+			DrawPoint(vec2(ypxl1 + 1, xpxl1), 0, vec3(fpart(yend) * xgap));
+		}
 	}
 	else {
-		DrawPoint(vec2(xpxl1, ypxl1), 0, vec3(rfpart(yend) * xgap, 0, 0));
-		DrawPoint(vec2(xpxl1, ypxl1 + 1), 0, vec3(fpart(yend) * xgap, 0, 0));
+		if (xpxl1 >= 0 && xpxl1 < backBufferWidth && ypxl1 >= 0 && ypxl1 < backBufferHeight) {
+			DrawPoint(vec2(xpxl1, ypxl1), 0, vec3(rfpart(yend) * xgap));
+		}
+		if (xpxl1 >= 0 && xpxl1 < backBufferWidth && ypxl1 + 1 >= 0 && ypxl1 + 1 < backBufferHeight) {
+			DrawPoint(vec2(xpxl1, ypxl1 + 1), 0, vec3(fpart(yend) * xgap));
+		}
 	}
 
 	float intery = yend + gradient; // first y-intersection for the main loop
@@ -134,26 +142,42 @@ void DrawLineWu(float x0, float y0, float x1, float y1) {
 	int xpxl2 = xend;
 	int ypxl2 = floor(yend);
 	if (steep) {
-		DrawPoint(vec2(ypxl2, xpxl2), 0, vec3(rfpart(yend) * xgap, 0, 0));
-		DrawPoint(vec2(ypxl2 + 1, xpxl2), 0, vec3(fpart(yend) * xgap, 0, 0));
+		if (ypxl2 >= 0 && ypxl2 < backBufferWidth && xpxl2 >= 0 && xpxl2 < backBufferHeight) {
+			DrawPoint(vec2(ypxl2, xpxl2), 0, vec3(rfpart(yend) * xgap));
+		}
+		if (ypxl2 + 1 >= 0 && ypxl2 + 1 < backBufferWidth && xpxl2 >= 0 && xpxl2 < backBufferHeight) {
+			DrawPoint(vec2(ypxl2 + 1, xpxl2), 0, vec3(fpart(yend) * xgap));
+		}
 	}
 	else {
-		DrawPoint(vec2(xpxl2, ypxl2), 0, vec3(rfpart(yend) * xgap, 0, 0));
-		DrawPoint(vec2(xpxl2, ypxl2 + 1), 0, vec3(fpart(yend) * xgap, 0, 0));
+		if (xpxl2 >= 0 && xpxl2 < backBufferWidth && ypxl2 >= 0 && ypxl2 < backBufferHeight) {
+			DrawPoint(vec2(xpxl2, ypxl2), 0, vec3(rfpart(yend) * xgap));
+		}
+		if (xpxl2 >= 0 && xpxl2 < backBufferWidth && ypxl2 + 1 >= 0 && ypxl2 + 1 < backBufferHeight) {
+			DrawPoint(vec2(xpxl2, ypxl2 + 1), 0, vec3(fpart(yend) * xgap));
+		}
 	}
 
 	// main loop
 	if (steep) {
 		for (int x = xpxl1 + 1; x <= xpxl2 - 1; x++) {
-			DrawPoint(vec2((int)floor(intery), x), 0, vec3(rfpart(intery), 0, 0));
-			DrawPoint(vec2((int)(floor(intery) + 1), x), 0, vec3(fpart(intery), 0, 0));
+			if ((int)floor(intery) >= 0 && (int)floor(intery) < backBufferWidth && x >= 0 && x < backBufferHeight) {
+				DrawPoint(vec2((int)floor(intery), x), 0, vec3(rfpart(intery)));
+			}
+			if ((int)floor(intery) + 1 >= 0 && (int)floor(intery) + 1 < backBufferWidth && x >= 0 && x < backBufferHeight) {
+				DrawPoint(vec2((int)(floor(intery) + 1), x), 0, vec3(fpart(intery)));
+			}
 			intery = intery + gradient;
 		}
 	}
 	else {
 		for (int x = xpxl1 + 1; x <= xpxl2 - 1; x++) {
-			DrawPoint(vec2(x, (int)floor(intery)), 0, vec3(rfpart(intery), 0, 0));
-			DrawPoint(vec2(x, (int)(floor(intery) + 1)), 0, vec3(fpart(intery), 0, 0));
+			if (x >= 0 && x < backBufferWidth && (int)floor(intery) >= 0 && (int)floor(intery) < backBufferHeight) {
+				DrawPoint(vec2(x, (int)floor(intery)), 0, vec3(rfpart(intery)));
+			}
+			if (x >= 0 && x < backBufferWidth && (int)floor(intery) + 1 >= 0 && (int)floor(intery) + 1 < backBufferHeight) {
+				DrawPoint(vec2(x, (int)(floor(intery) + 1)), 0, vec3(fpart(intery)));
+			}
 			intery = intery + gradient;
 		}
 	}

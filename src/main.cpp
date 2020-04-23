@@ -58,7 +58,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		L"soft",                        // Window text
 		WS_OVERLAPPEDWINDOW,            // Window style
 		// position and size
-		CW_USEDEFAULT, CW_USEDEFAULT, WINDOW_WIDTH, WINDOW_HEIGHT,
+		CW_USEDEFAULT, CW_USEDEFAULT, WINDOW_WIDTH + 16, WINDOW_HEIGHT + 39,
 		NULL,       // Parent window    
 		NULL,       // Menu
 		hInstance,  // Instance handle
@@ -82,6 +82,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 			UpdateWindow(g_Wnd);
 		}
 	}
+
 
 	return 0;
 }
@@ -149,7 +150,12 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 		LARGE_INTEGER frequency;
 		QueryPerformanceFrequency(&frequency);
 		double s = double(dt) / double(frequency.QuadPart) / 1; // time between drawings
-		sprintf_s(s_Buffer, sizeof(s_Buffer), "%.1f FPS\n", 1.f / s);
+
+		// calc exact client window size
+		RECT clientRect;
+		GetClientRect(g_Wnd, &clientRect);
+
+		sprintf_s(s_Buffer, sizeof(s_Buffer), "%.1f FPS %d %d %d %d \n", 1.f / s, clientRect.left, clientRect.right, clientRect.top, clientRect.bottom);
 		OutputDebugStringA(s_Buffer);
 		/*s_Count = 0;
 		s_Time = 0;*/
@@ -178,17 +184,18 @@ int main() {
 	QueryPerformanceCounter(&time0);
 	g_dtime0 = time0.QuadPart;
 
-	
+	while (true) {
 		// time
 		LARGE_INTEGER time1;
 		QueryPerformanceCounter(&time1);
 		static int s_FrameCount = 0;
-		UpdateBackBuffer(g_Backbuffer, g_Zbuffer, g_BackbufferWidth, g_BackbufferHeight, 
+		UpdateBackBuffer(g_Backbuffer, g_Zbuffer, g_BackbufferWidth, g_BackbufferHeight,
 			(time1.QuadPart - g_dtime0) / 10000000.0); // call drawing main func
 		s_FrameCount++;
 		LARGE_INTEGER time2;
 		QueryPerformanceCounter(&time2);
-	
+	}
+
 
 	/*mat4 m(.5);
 	m.print();

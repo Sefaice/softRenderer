@@ -6,8 +6,7 @@
 // 2D rasterization
 
 // Bresenham Algorithm
-void InitLine(int x0, int y0, int x1, int y1);
-void DrawLine(float* frameBuffer, int frameWidth, int frameHeight);
+void DrawLine(int x0, int y0, int x1, int y1, int, int);
 
 // wu's line algorithm
 void DrawLineWu(float x0, float y0, float x1, float y1, int, int);

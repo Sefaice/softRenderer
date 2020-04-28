@@ -14,15 +14,29 @@
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 720
 
+#define SSAA 0
+#define SSAA_LEVEL 2 // SSAA_LEVEL^2 x SSAA
+
 static HINSTANCE g_HInstance;
 static HWND g_Wnd;
 static HDC g_HWndDC; //handle to the device context of the main window
 static HDC g_HBackbufferDC;	//handle to the device context of the backbuffer
 static HBITMAP g_BackbufferBitmap;
 
+#if SSAA // 4x SSAA
+static const int g_BackbufferWidth = WINDOW_WIDTH * SSAA_LEVEL;
+static const int g_BackbufferHeight = WINDOW_HEIGHT * SSAA_LEVEL;
+#else
 static const int g_BackbufferWidth = WINDOW_WIDTH;
 static const int g_BackbufferHeight = WINDOW_HEIGHT;
+#endif
+
+// for readable code, init w and h for bitmap
+static const int g_BitmapWidth = WINDOW_WIDTH;
+static const int g_BitmapHeight = WINDOW_HEIGHT;
+
 static uint32_t* g_Backbuffer;
+static uint32_t* g_BackBitmapbuffer; // for SSAA
 static float* g_Zbuffer; // z buffer
 
 double g_dtime0;
@@ -41,6 +55,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 	LARGE_INTEGER time0;
 	QueryPerformanceCounter(&time0);
 	g_dtime0 = time0.QuadPart;
+
+	// init renderer
+	InitRenderer();
 
 	// Register the window class.
 	const wchar_t CLASS_NAME[] = L"soft";
@@ -91,21 +108,23 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 static void InitBackbufferBitmap() {
 	BITMAPINFO bmi;
 	bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-	bmi.bmiHeader.biWidth = g_BackbufferWidth;
-	bmi.bmiHeader.biHeight = g_BackbufferHeight;
+	bmi.bmiHeader.biWidth = g_BitmapWidth;
+	bmi.bmiHeader.biHeight = g_BitmapHeight;
 	bmi.bmiHeader.biPlanes = 1;
 	bmi.bmiHeader.biBitCount = 32; // 32bits every pixel
 	bmi.bmiHeader.biCompression = BI_RGB;
-	bmi.bmiHeader.biSizeImage = g_BackbufferWidth * g_BackbufferHeight * 4;
+	bmi.bmiHeader.biSizeImage = g_BitmapWidth * g_BitmapHeight * 4;
 
 	// init backbufer
 	g_Backbuffer = new uint32_t[g_BackbufferWidth * g_BackbufferHeight];
 	memset(g_Backbuffer, 0, g_BackbufferWidth * g_BackbufferHeight * sizeof(g_Backbuffer[0]));
+	g_BackBitmapbuffer = new uint32_t[g_BitmapWidth * g_BitmapHeight];
+	memset(g_BackBitmapbuffer, 0, g_BitmapWidth * g_BitmapHeight * sizeof(g_BackBitmapbuffer[0]));
 
 	// init backbuffer device context
 	g_HWndDC = GetDC(g_Wnd);
 	// the void** pointer is "A pointer to a variable that receives a pointer to the location of the DIB bit values"
-	g_BackbufferBitmap = CreateDIBSection(g_HWndDC, &bmi, DIB_RGB_COLORS, (void**)&g_Backbuffer, NULL, 0x0);
+	g_BackbufferBitmap = CreateDIBSection(g_HWndDC, &bmi, DIB_RGB_COLORS, (void**)&g_BackBitmapbuffer, NULL, 0x0);
 	g_HBackbufferDC = CreateCompatibleDC(g_HWndDC);
 	SelectObject(g_HBackbufferDC, g_BackbufferBitmap);
 
@@ -130,13 +149,34 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 		LARGE_INTEGER time1;
 		QueryPerformanceCounter(&time1);
 		static int s_FrameCount = 0;
-		UpdateBackBuffer(g_Backbuffer, g_Zbuffer, g_BackbufferWidth, g_BackbufferHeight, 
+		UpdateBackBuffer(g_Backbuffer, g_Zbuffer, g_BackbufferWidth, g_BackbufferHeight,
 			(time1.QuadPart - g_dtime0) / 10000000.0); // call drawing main func
 		s_FrameCount++;
 		LARGE_INTEGER time2;
 		QueryPerformanceCounter(&time2);
 
 		// draw frame
+#if SSAA
+		for (int i = 0; i < g_BitmapWidth; i++) {
+			for (int j = 0; j < g_BitmapHeight; j++) {
+				uint32_t r = 0, g = 0, b = 0;
+				for (int k = 0; k < SSAA_LEVEL; k++) {
+					for (int l = 0; l < SSAA_LEVEL; l++) {
+						r += g_Backbuffer[(j * SSAA_LEVEL + l) * g_BackbufferWidth + i * SSAA_LEVEL + k] >> 16 & 0x000000FF;
+						g += g_Backbuffer[(j * SSAA_LEVEL + l) * g_BackbufferWidth + i * SSAA_LEVEL + k] >> 8 & 0x000000FF;
+						b += g_Backbuffer[(j * SSAA_LEVEL + l) * g_BackbufferWidth + i * SSAA_LEVEL + k] & 0x000000FF;
+					}
+				}
+				r /= (SSAA_LEVEL * SSAA_LEVEL);
+				g /= (SSAA_LEVEL * SSAA_LEVEL);
+				b /= (SSAA_LEVEL * SSAA_LEVEL);
+			
+				g_BackBitmapbuffer[j * g_BitmapWidth + i] = b | (g << 8) | (r << 16);
+			}
+		}
+#else
+		memcpy(g_BackBitmapbuffer, g_Backbuffer, g_BackbufferWidth * g_BackbufferHeight * sizeof(g_Backbuffer[0]));
+#endif
 		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(hwnd, &ps);
 		RECT rect;
@@ -184,6 +224,9 @@ int main() {
 	QueryPerformanceCounter(&time0);
 	g_dtime0 = time0.QuadPart;
 
+	// init renderer
+	InitRenderer();
+
 	while (true) {
 		// time
 		LARGE_INTEGER time1;
@@ -194,6 +237,28 @@ int main() {
 		s_FrameCount++;
 		LARGE_INTEGER time2;
 		QueryPerformanceCounter(&time2);
+
+#if SSAA
+		for (int i = 0; i < g_BitmapWidth; i++) {
+			for (int j = 0; j < g_BitmapHeight; j++) {
+				uint32_t r = 0, g = 0, b = 0;
+				for (int k = 0; k < SSAA_LEVEL; k++) {
+					for (int l = 0; l < SSAA_LEVEL; l++) {
+						r += g_Backbuffer[(j * SSAA_LEVEL + l) * g_BackbufferWidth + i * SSAA_LEVEL + k] >> 16 & 0x000000FF;
+						g += g_Backbuffer[(j * SSAA_LEVEL + l) * g_BackbufferWidth + i * SSAA_LEVEL + k] >> 8 & 0x000000FF;
+						b += g_Backbuffer[(j * SSAA_LEVEL + l) * g_BackbufferWidth + i * SSAA_LEVEL + k] & 0x000000FF;
+					}
+				}
+				r /= (SSAA_LEVEL * SSAA_LEVEL);
+				g /= (SSAA_LEVEL * SSAA_LEVEL);
+				b /= (SSAA_LEVEL * SSAA_LEVEL);
+			
+				g_BackBitmapbuffer[j * g_BitmapWidth + i] = b | (g << 8) | (r << 16);
+			}
+		}
+#else
+		memcpy(g_BackBitmapbuffer, g_Backbuffer, g_BackbufferWidth * g_BackbufferHeight * sizeof(g_Backbuffer[0]));
+#endif
 	}
 
 

@@ -1,11 +1,10 @@
 #include "2draster.h"
 
-vec2* points;
-int pointsNum;
-bool initBresenham = false; // bool for Bresenham Algorithm init line
-
 // draw line by Bresenham Algorithm
-void InitLine(int x0, int y0, int x1, int y1) {
+void DrawLine(int x0, int y0, int x1, int y1, int backBufferWidth, int backBufferHeight) {
+	vec2* points;
+	int pointsNum;
+
 	int deltax = (x1 - x0);
 	int deltay = (y1 - y0);
 
@@ -75,12 +74,14 @@ void InitLine(int x0, int y0, int x1, int y1) {
 		}
 	}
 
-}
-
-void DrawLine(float* frameBuffer, int frameWidth, int frameHeight) {
+	// draw
 	for (int i = 0; i < pointsNum; i++) {
-		DrawPoint(points[i], 0, vec3(1.0));
+		//if (points[i].x >= 0 && points[i].x < backBufferWidth && points[i].y >= 0 && points[i].y < backBufferHeight) {
+			DrawPoint(points[i], 0, vec3(1.0));
+		//}
 	}
+
+	delete[] points;
 }
 
 // wu's helper funcs
@@ -90,6 +91,12 @@ float fpart(float x) {
 
 float rfpart(float x) {
 	return 1 - fpart(x);
+}
+
+void DrawPointWu(vec2 p, float z, vec3 color, int backBufferWidth, int backBufferHeight) {
+	if (p.x >= 0 && p.x < backBufferWidth && p.y >= 0 && p.y < backBufferHeight) {
+		DrawPoint(p, 0, color);
+	}
 }
 
 // wu's line algorithm
@@ -108,7 +115,8 @@ void DrawLineWu(float x0, float y0, float x1, float y1, int backBufferWidth, int
 	float dx = x1 - x0;
 	float dy = y1 - y0;
 	float gradient = dy / dx;
-	if (dx == 0.0)	gradient = 1.0;
+	if (dx == 0.0) gradient = 1.0;
+	// if (dy == 0.0) gradient = 0.0;
 
 	// handle first endpoint
 	float xend = round(x0);
@@ -117,20 +125,13 @@ void DrawLineWu(float x0, float y0, float x1, float y1, int backBufferWidth, int
 	int xpxl1 = xend;
 	int ypxl1 = floor(yend);
 	if (steep) {
-		if (ypxl1 >= 0 && ypxl1 < backBufferWidth && xpxl1 >= 0 && xpxl1 < backBufferHeight) {
-			DrawPoint(vec2(ypxl1, xpxl1), 0, vec3(rfpart(yend) * xgap));
-		}
-		if (ypxl1 + 1 >= 0 && ypxl1 + 1 < backBufferWidth && xpxl1 >= 0 && xpxl1 < backBufferHeight) {
-			DrawPoint(vec2(ypxl1 + 1, xpxl1), 0, vec3(fpart(yend) * xgap));
-		}
+		DrawPointWu(vec2(ypxl1, xpxl1), 0, vec3(rfpart(yend) * xgap), backBufferWidth, backBufferHeight);
+		DrawPointWu(vec2(ypxl1 + 1, xpxl1), 0, vec3(fpart(yend) * xgap), backBufferWidth, backBufferHeight);
 	}
 	else {
-		if (xpxl1 >= 0 && xpxl1 < backBufferWidth && ypxl1 >= 0 && ypxl1 < backBufferHeight) {
-			DrawPoint(vec2(xpxl1, ypxl1), 0, vec3(rfpart(yend) * xgap));
-		}
-		if (xpxl1 >= 0 && xpxl1 < backBufferWidth && ypxl1 + 1 >= 0 && ypxl1 + 1 < backBufferHeight) {
-			DrawPoint(vec2(xpxl1, ypxl1 + 1), 0, vec3(fpart(yend) * xgap));
-		}
+		DrawPointWu(vec2(xpxl1, ypxl1), 0, vec3(rfpart(yend) * xgap), backBufferWidth, backBufferHeight);
+		DrawPointWu(vec2(xpxl1, ypxl1 + 1), 0, vec3(fpart(yend) * xgap), backBufferWidth, backBufferHeight);
+
 	}
 
 	float intery = yend + gradient; // first y-intersection for the main loop
@@ -142,42 +143,26 @@ void DrawLineWu(float x0, float y0, float x1, float y1, int backBufferWidth, int
 	int xpxl2 = xend;
 	int ypxl2 = floor(yend);
 	if (steep) {
-		if (ypxl2 >= 0 && ypxl2 < backBufferWidth && xpxl2 >= 0 && xpxl2 < backBufferHeight) {
-			DrawPoint(vec2(ypxl2, xpxl2), 0, vec3(rfpart(yend) * xgap));
-		}
-		if (ypxl2 + 1 >= 0 && ypxl2 + 1 < backBufferWidth && xpxl2 >= 0 && xpxl2 < backBufferHeight) {
-			DrawPoint(vec2(ypxl2 + 1, xpxl2), 0, vec3(fpart(yend) * xgap));
-		}
+		DrawPointWu(vec2(ypxl2, xpxl2), 0, vec3(rfpart(yend) * xgap), backBufferWidth, backBufferHeight);
+		DrawPointWu(vec2(ypxl2 + 1, xpxl2), 0, vec3(fpart(yend) * xgap), backBufferWidth, backBufferHeight);
 	}
 	else {
-		if (xpxl2 >= 0 && xpxl2 < backBufferWidth && ypxl2 >= 0 && ypxl2 < backBufferHeight) {
-			DrawPoint(vec2(xpxl2, ypxl2), 0, vec3(rfpart(yend) * xgap));
-		}
-		if (xpxl2 >= 0 && xpxl2 < backBufferWidth && ypxl2 + 1 >= 0 && ypxl2 + 1 < backBufferHeight) {
-			DrawPoint(vec2(xpxl2, ypxl2 + 1), 0, vec3(fpart(yend) * xgap));
-		}
+		DrawPointWu(vec2(xpxl2, ypxl2), 0, vec3(rfpart(yend) * xgap), backBufferWidth, backBufferHeight);
+		DrawPointWu(vec2(xpxl2, ypxl2 + 1), 0, vec3(fpart(yend) * xgap), backBufferWidth, backBufferHeight);
 	}
 
 	// main loop
 	if (steep) {
 		for (int x = xpxl1 + 1; x <= xpxl2 - 1; x++) {
-			if ((int)floor(intery) >= 0 && (int)floor(intery) < backBufferWidth && x >= 0 && x < backBufferHeight) {
-				DrawPoint(vec2((int)floor(intery), x), 0, vec3(rfpart(intery)));
-			}
-			if ((int)floor(intery) + 1 >= 0 && (int)floor(intery) + 1 < backBufferWidth && x >= 0 && x < backBufferHeight) {
-				DrawPoint(vec2((int)(floor(intery) + 1), x), 0, vec3(fpart(intery)));
-			}
+			DrawPointWu(vec2((int)floor(intery), x), 0, vec3(rfpart(intery)), backBufferWidth, backBufferHeight);
+			DrawPointWu(vec2((int)(floor(intery) + 1), x), 0, vec3(fpart(intery)), backBufferWidth, backBufferHeight);
 			intery = intery + gradient;
 		}
 	}
 	else {
 		for (int x = xpxl1 + 1; x <= xpxl2 - 1; x++) {
-			if (x >= 0 && x < backBufferWidth && (int)floor(intery) >= 0 && (int)floor(intery) < backBufferHeight) {
-				DrawPoint(vec2(x, (int)floor(intery)), 0, vec3(rfpart(intery)));
-			}
-			if (x >= 0 && x < backBufferWidth && (int)floor(intery) + 1 >= 0 && (int)floor(intery) + 1 < backBufferHeight) {
-				DrawPoint(vec2(x, (int)(floor(intery) + 1)), 0, vec3(fpart(intery)));
-			}
+			DrawPointWu(vec2(x, (int)floor(intery)), 0, vec3(rfpart(intery)), backBufferWidth, backBufferHeight);
+			DrawPointWu(vec2(x, (int)(floor(intery) + 1)), 0, vec3(fpart(intery)), backBufferWidth, backBufferHeight);
 			intery = intery + gradient;
 		}
 	}

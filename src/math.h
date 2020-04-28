@@ -57,6 +57,11 @@ struct Vertex {
 	}
 };
 
+struct Triangle {
+	vec3 pos[3];
+	vec3 color[3];
+};
+
 struct mat4 {  // column-major. m[0] is actually the first column of matrix 
 	float m[4][4];
 
@@ -106,6 +111,17 @@ inline vec4 operator*(const mat4& m, const vec4& v) {
 		m.m[0][1] * v.x + m.m[1][1] * v.y + m.m[2][1] * v.z + m.m[3][1] * v.w,
 		m.m[0][2] * v.x + m.m[1][2] * v.y + m.m[2][2] * v.z + m.m[3][2] * v.w,
 		m.m[0][3] * v.x + m.m[1][3] * v.y + m.m[2][3] * v.z + m.m[3][3] * v.w);
+}
+
+inline mat4 operator*(const mat4& m, float a) {
+	mat4 r;
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++) {
+			r.m[i][j] = m.m[i][j] * a;
+		}
+	}
+
+	return r;
 }
 
 inline mat4 operator*(const mat4& m1, const mat4& m2) {
@@ -158,4 +174,13 @@ inline mat4 rotate(const mat4& m, float angle, vec3 axis) { // angle is in [0, 3
 				  0,                         0,                         0,                         1);
 
 	return r * m;
+}
+
+inline mat4 scale(const mat4& m, float scaleAmount) {
+	mat4 s = mat4(scaleAmount, 0, 0, 0,
+		0, scaleAmount, 0, 0,
+		0, 0, scaleAmount, 0,
+		0, 0, 0, 1);
+
+	return s * m;
 }

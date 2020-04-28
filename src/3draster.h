@@ -3,6 +3,7 @@
 #include "2draster.h"
 #include "clip.h"
 
+void InitRenderer();
 void UpdateBackBuffer(uint32_t* backBuffer, float* zbuffer, int backBufferWidth, int backBufferHeight, double dt);
 
 // 2D

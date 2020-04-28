@@ -41,5 +41,8 @@
     <ClInclude Include="..\..\src\3draster.h">
       <Filter>源文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\OBJ_Loader.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

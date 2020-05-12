@@ -15,6 +15,7 @@ softRenderer
   * top-left rule
   * vertex z interpolation, color interpolation
   * polygon mode
+* SSAA
 
 TODOS:
 * shading color

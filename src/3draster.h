@@ -10,11 +10,11 @@ void UpdateBackBuffer(uint32_t* backBuffer, float* zbuffer, int backBufferWidth,
 
 void DrawPoint(vec2 p, float z, vec3 color);
 
-void DrawTriangle2D(vec3 p1, vec3 p2, vec3 p3, vec3 c1, vec3 c2, vec3 c3);
+void DrawTriangle2D(vec3 p1, vec3 p2, vec3 p3, vec3 c1, vec3 c2, vec3 c3, vec2 t1, vec2 t2, vec2 t3);
 
 // 3D rasterization
 
-void DrawTriangle3D(vec3 p1, vec3 p2, vec3 p3, vec3 c1, vec3 c2, vec3 c3);
+void DrawTriangle3D(vec3 p1, vec3 p2, vec3 p3, vec3 c1, vec3 c2, vec3 c3, vec2 t1, vec2 t2, vec2 t3);
 
 vec4 MVP_transform(vec3 p);
 vec3 DV_transform(vec4 p);

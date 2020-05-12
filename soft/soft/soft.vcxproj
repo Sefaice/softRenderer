@@ -30,6 +30,7 @@
     <ClInclude Include="..\..\src\math.h" />
     <ClInclude Include="..\..\src\3draster.h" />
     <ClInclude Include="..\..\src\OBJ_Loader.h" />
+    <ClInclude Include="..\..\src\stb_image.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

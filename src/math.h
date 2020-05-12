@@ -7,11 +7,18 @@
 
 #define M_PI 3.14159265358979323846f
 
+// structs
+
 struct vec2 {
-	int x, y;
+	float x, y;
 
 	vec2() : x(0), y(0) {}
-	vec2(int _x, int _y) : x(_x), y(_y) {}
+	vec2(float _x, float _y) : x(_x), y(_y) {}
+	void print() {
+		std::cout << std::fixed << std::setprecision(3);
+		std::cout << "vec2(" << x << ", " << y << ")" << std::endl;
+		std::cout << std::setprecision(0);
+	}
 };
 
 struct vec3 {
@@ -46,14 +53,17 @@ struct vec4 {
 struct Vertex {
 	vec4 pos;
 	vec3 color;
+	vec2 texture;
 
-	Vertex() : pos(vec4()), color(vec3()) {}
-	Vertex(vec4 _pos, vec3 _color) : pos(_pos), color(_color) {}
+	Vertex() : pos(vec4()), color(vec3()), texture(vec2()) {}
+	Vertex(vec4 _pos, vec3 _color, vec2 _texture) : pos(_pos), color(_color), texture(_texture) {}
 	void print() {
 		std::cout << "Vertex pos: ";
 		pos.print();
 		std::cout << "Vertex color: ";
 		color.print();
+		std::cout << "Vertex texture coords: ";
+		texture.print();
 	}
 };
 
@@ -99,6 +109,8 @@ struct mat4 {  // column-major. m[0] is actually the first column of matrix
 	}
 };
 
+// functions
+
 inline vec3 normalize(vec3& v) {
 	float length = v.length();
 	if (length == 0)
@@ -135,6 +147,10 @@ inline mat4 operator*(const mat4& m1, const mat4& m2) {
 	return r;
 }
 
+inline vec2 lerp(vec2 v1, vec2 v2, float t) {
+	return vec2(v1.x * (1 - t) + v2.x * t, v1.y * (1 - t) + v2.y * t);
+}
+
 inline vec3 lerp(vec3 v1, vec3 v2, float t) { // v3 = v1 * (1 - t) + v2 * t
 	return vec3(v1.x * (1 - t) + v2.x * t, v1.y * (1 - t) + v2.y * t,
 		v1.z * (1 - t) + v2.z * t);
@@ -146,7 +162,7 @@ inline vec4 lerp(vec4 v1, vec4 v2, float t) {
 }
 
 inline Vertex lerp(Vertex v1, Vertex v2, float t) {
-	return Vertex(lerp(v1.pos, v2.pos, t), lerp(v1.color, v2.color, t));
+	return Vertex(lerp(v1.pos, v2.pos, t), lerp(v1.color, v2.color, t), lerp(v1.texture, v2.texture, t));
 }
 
 inline float radians(float degree) {

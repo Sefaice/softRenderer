@@ -57,7 +57,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 	g_dtime0 = time0.QuadPart;
 
 	// init renderer
-	InitRenderer();
+	InitRenderer(g_Backbuffer, g_Zbuffer, g_BackbufferWidth, g_BackbufferHeight);
 
 	// Register the window class.
 	const wchar_t CLASS_NAME[] = L"soft";
@@ -149,8 +149,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 		LARGE_INTEGER time1;
 		QueryPerformanceCounter(&time1);
 		static int s_FrameCount = 0;
-		UpdateBackBuffer(g_Backbuffer, g_Zbuffer, g_BackbufferWidth, g_BackbufferHeight,
-			(time1.QuadPart - g_dtime0) / 10000000.0); // call drawing main func
+		UpdateBackBuffer((time1.QuadPart - g_dtime0) / 10000000.0); // call drawing main func
 		s_FrameCount++;
 		LARGE_INTEGER time2;
 		QueryPerformanceCounter(&time2);
@@ -225,15 +224,14 @@ int main() {
 	g_dtime0 = time0.QuadPart;
 
 	// init renderer
-	InitRenderer();
+	InitRenderer(g_Backbuffer, g_Zbuffer, g_BackbufferWidth, g_BackbufferHeight);
 
 	while (true) {
 		// time
 		LARGE_INTEGER time1;
 		QueryPerformanceCounter(&time1);
 		static int s_FrameCount = 0;
-		UpdateBackBuffer(g_Backbuffer, g_Zbuffer, g_BackbufferWidth, g_BackbufferHeight,
-			(time1.QuadPart - g_dtime0) / 10000000.0); // call drawing main func
+		UpdateBackBuffer((time1.QuadPart - g_dtime0) / 10000000.0); // call drawing main func
 		s_FrameCount++;
 		LARGE_INTEGER time2;
 		QueryPerformanceCounter(&time2);

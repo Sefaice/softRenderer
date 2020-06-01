@@ -16,16 +16,24 @@ double t_dtime;
 
 std::vector<Triangle*> modelTriangles;
 
+// shaders
+VertexShader* vertexShader;
+
 // texture
 Texture* texture;
 
 // light
 vec3 lightPos(1.2f, 1.0f, 0.0f);
 vec3 lightColor(1.0f, 1.0f, 1.0f);
-vec3 viewPos(0, 0, 10);
+vec3 viewPos(0, 0, 9);
 mat4 model_tmp; // use model for lighting temporarily
 
-void InitRenderer() {
+void InitRenderer(uint32_t* backBuffer, float* zbuffer, int backBufferWidth, int backBufferHeight) {
+
+	t_backBuffer = backBuffer;
+	t_zBuffer = zbuffer;
+	t_backBufferWidth = backBufferWidth;
+	t_backBufferHeight = backBufferHeight;
 
 	// load texture
 	int imgWidth, imgHeight, imgNrChannels;
@@ -36,7 +44,6 @@ void InitRenderer() {
 	// load objects
 	objl::Loader loader;
 	bool load = loader.LoadFile("../../src/res/models/rock.obj");
-
 	if (!load) {
 		std::cout << "Load obj file failed" << std::endl;
 	}
@@ -63,12 +70,8 @@ void InitRenderer() {
 	}
 }
 
-void UpdateBackBuffer(uint32_t* backBuffer, float* zbuffer, int backBufferWidth, int backBufferHeight, double dt) {
-	t_backBuffer = backBuffer;
-	t_zBuffer = zbuffer;
+void UpdateBackBuffer(double dt) {
 	t_dtime = dt;
-	t_backBufferWidth = backBufferWidth;
-	t_backBufferHeight = backBufferHeight;
 
 	// clear backbuffer
 	memset(t_backBuffer, 0, t_backBufferWidth * t_backBufferHeight * sizeof(t_backBuffer[0]));
@@ -79,6 +82,43 @@ void UpdateBackBuffer(uint32_t* backBuffer, float* zbuffer, int backBufferWidth,
 		}
 	}*/
 	std::fill(t_zBuffer, t_zBuffer + t_backBufferWidth * t_backBufferHeight, 1.0);
+
+	// init mats and shaders
+	// model
+	mat4 model = mat4(1.0);
+	//model = translate(model, vec3(5.0f * float(sin(t_dtime)),0.0, 0.0));
+	model = translate(model, vec3(0.0, 0.0, 0.0));
+	//model = rotate(model, 2, vec3(-1, 2, 3));
+	model = rotate(model, t_dtime, vec3(-1, 2, 3));
+	//model = scale(model, 3.0f);
+	// view
+	vec3 cameraPos = viewPos;
+	vec3 cameraRight = vec3(1, 0, 0);
+	vec3 cameraUp = vec3(0, 1, 0);
+	vec3 cameraBackword = vec3(0, 0, 1);
+	mat4 view1 = mat4(cameraRight.x, cameraUp.x, cameraBackword.x, 0,
+		cameraRight.y, cameraUp.y, cameraBackword.y, 0,
+		cameraRight.z, cameraUp.z, cameraBackword.z, 0,
+		0, 0, 0, 1);
+	mat4 view2 = mat4(1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		-cameraPos.x, -cameraPos.y, -cameraPos.z, 1);
+	mat4 view = view1 * view2;
+	// projection
+	float fov = 45.0f;
+	float ar = (float)t_backBufferWidth / (float)t_backBufferHeight;
+	float n = .1f, f = 100.0f;
+	float tanHalfHFOV = tanf(radians(fov / 2.0f)) * ar;
+	float tanHalfVFOV = tanf(radians(fov / 2.0f));
+	float r = n * tanHalfHFOV, l = -n * tanHalfHFOV;
+	float t = n * tanHalfVFOV, b = -n * tanHalfVFOV;
+	mat4 projection = mat4(2 * n / (r - l), 0, 0, 0,
+		0, 2 * n / (t - b), 0, 0,
+		(r + l) / (r - l), (t + b) / (t - b), -(f + n) / (f - n), -1,
+		0, 0, -2 * f * n / (f - n), 0);
+	// shaders
+	vertexShader = new VertexShader(model, view, projection);
 
 	//// draw point
 	//DrawPoint(vec2(500, 100), 0, vec3(0, 0, 1));
@@ -166,7 +206,8 @@ void DrawPoint(vec2 p, float z, vec3 color) {
 }
 
 // draw triangle by line equation / center
-void DrawTriangle2D(vec3 p1, vec3 p2, vec3 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t1, vec2 t2, vec2 t3) {
+void DrawTriangle2D(vec3 p1, vec3 p2, vec3 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t1, vec2 t2, vec2 t3,
+	vec3 pw1, vec3 pw2, vec3 pw3) {
 
 #if POLYGON_MODE // draw frame in polygon mode
 	//DrawLine(p1.x, p1.y, p2.x, p2.y, t_backBufferWidth, t_backBufferHeight);
@@ -235,17 +276,23 @@ void DrawTriangle2D(vec3 p1, vec3 p2, vec3 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t
 				((o_y31 > 0 && onEdge31) || (o_y12 == 0 && o_x12 > 0 && onEdge12))); // 31 left, 12 top
 
 			if (u > 0 && v > 0 && u + v < 1 || overlap) {
+				// interpolation
 				// z interpolation
 				float z = 1 / (u / p3.z + v / p2.z + (1 - u - v) / p1.z);
-				// other attributes interpolation
+				// normal
 				vec3 normal;
 				normal.x = z * (n1.x / p1.z * (1 - u - v) + n2.x / p2.z * v + n3.x / p3.z * u);
 				normal.y = z * (n1.y / p1.z * (1 - u - v) + n2.y / p2.z * v + n3.y / p3.z * u);
 				normal.z = z * (n1.z / p1.z * (1 - u - v) + n2.z / p2.z * v + n3.z / p3.z * u);
-				// texture
+				// texture coords
 				vec2 texCoords;
 				texCoords.x = z * (t1.x / p1.z * (1 - u - v) + t2.x / p2.z * v + t3.x / p3.z * u);
 				texCoords.y = z * (t1.y / p1.z * (1 - u - v) + t2.y / p2.z * v + t3.y / p3.z * u);
+				// world pos
+				vec3 worldPos;
+				worldPos.x = z * (pw1.x / p1.z * (1 - u - v) + pw2.x / p2.z * v + pw3.x / p3.z * u);
+				worldPos.y = z * (pw1.y / p1.z * (1 - u - v) + pw2.y / p2.z * v + pw3.y / p3.z * u);
+				worldPos.z = z * (pw1.z / p1.z * (1 - u - v) + pw2.z / p2.z * v + pw3.z / p3.z * u);
 
 				// SHADING (in fragment shader)
 
@@ -254,7 +301,7 @@ void DrawTriangle2D(vec3 p1, vec3 p2, vec3 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t
 				//color = vec3(texCoords.x, texCoords.y, 0);
 
 				// lighting
-				vec3 FragPos(0, 0, 0);
+				vec3 FragPos = worldPos;
 				// ambient
 				float ambientStrength = 0.7;
 				vec3 ambient = texColor * ambientStrength;
@@ -270,7 +317,7 @@ void DrawTriangle2D(vec3 p1, vec3 p2, vec3 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t
 				viewDir = normalize(viewDir);
 				vec3 reflectDir = reflect(-lightDir, norm);
 				reflectDir = normalize(reflectDir);
-				float spec = pow(maxInTwo(dot(viewDir, reflectDir), 0.0), 32);
+				float spec = pow(maxInTwo(dot(viewDir, reflectDir), 0.0), 2);
 				vec3 specular = texColor * specularStrength * spec;
 
 				vec3 color = ambient + diffuse + specular;
@@ -285,13 +332,17 @@ void DrawTriangle2D(vec3 p1, vec3 p2, vec3 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t
 }
 
 void DrawTriangle3D(vec3 p1, vec3 p2, vec3 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t1, vec2 t2, vec2 t3) {
-	vec4 p1p = MVP_transform(p1);
-	vec4 p2p = MVP_transform(p2);
-	vec4 p3p = MVP_transform(p3);
+	vec4 p1p = vertexShader->MVP_transform(p1);
+	vec4 p2p = vertexShader->MVP_transform(p2);
+	vec4 p3p = vertexShader->MVP_transform(p3);
 
-	Vertex v1 = Vertex(p1p, n1, t1);
-	Vertex v2 = Vertex(p2p, n2, t2);
-	Vertex v3 = Vertex(p3p, n3, t3);
+	vec3 pw1 = vertexShader->getWorldPos(p1);
+	vec3 pw2 = vertexShader->getWorldPos(p2);
+	vec3 pw3 = vertexShader->getWorldPos(p3);
+
+	Vertex v1 = Vertex(p1p, n1, t1, pw1);
+	Vertex v2 = Vertex(p2p, n2, t2, pw2);
+	Vertex v3 = Vertex(p3p, n3, t3, pw3);
 	// clip
 	std::vector<Vertex> vertices; vertices.push_back(v1); vertices.push_back(v2); vertices.push_back(v3);
 	std::vector<Vertex> result = Clip(vertices);
@@ -314,56 +365,10 @@ void DrawTriangle3D(vec3 p1, vec3 p2, vec3 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t
 			p2s.print();
 			p3s.print();*/
 			DrawTriangle2D(p1s, p2s, p3s, initVertex.normal, secVertex.normal, thiVertex.normal,
-				initVertex.texCoords, secVertex.texCoords, thiVertex.texCoords);
+				initVertex.texCoords, secVertex.texCoords, thiVertex.texCoords,
+				initVertex.worldPos, secVertex.worldPos, thiVertex.worldPos);
 		}
 	}
-}
-
-// model, view, projection transform
-vec4 MVP_transform(vec3 p) {
-	vec4 pl = vec4(p, 1.0); // homogenous coordinates
-
-	// local -> world
-	mat4 model = mat4(1.0);
-	//model = translate(model, vec3(5.0f * float(sin(t_dtime)),0.0, 0.0));
-	model = translate(model, vec3(0.0, 0.0, 0.0));
-	//model = rotate(model, 2, vec3(-1, 2, 3));
-	model = rotate(model, t_dtime, vec3(-1, 2, 3));
-	//model = scale(model, 3.0f);
-
-	vec4 pw = model * pl;
-
-	// world -> view
-	vec3 cameraPos = viewPos;
-	vec3 cameraRight = vec3(1, 0, 0);
-	vec3 cameraUp = vec3(0, 1, 0);
-	vec3 cameraBackword = vec3(0, 0, 1);
-	mat4 view1 = mat4(cameraRight.x, cameraUp.x, cameraBackword.x, 0,
-		cameraRight.y, cameraUp.y, cameraBackword.y, 0,
-		cameraRight.z, cameraUp.z, cameraBackword.z, 0,
-		0, 0, 0, 1);
-	mat4 view2 = mat4(1, 0, 0, 0,
-		0, 1, 0, 0,
-		0, 0, 1, 0,
-		-cameraPos.x, -cameraPos.y, -cameraPos.z, 1);
-	mat4 view = view1 * view2;
-	vec4 pv = view * pw;
-
-	// view -> clip(perspective)
-	float fov = 45.0f;
-	float ar = (float)t_backBufferWidth / (float)t_backBufferHeight;
-	float n = .1f, f = 100.0f;
-	float tanHalfHFOV = tanf(radians(fov / 2.0f)) * ar;
-	float tanHalfVFOV = tanf(radians(fov / 2.0f));
-	float r = n * tanHalfHFOV, l = -n * tanHalfHFOV;
-	float t = n * tanHalfVFOV, b = -n * tanHalfVFOV;
-	mat4 projection = mat4(2 * n / (r - l), 0, 0, 0,
-		0, 2 * n / (t - b), 0, 0,
-		(r + l) / (r - l), (t + b) / (t - b), -(f + n) / (f - n), -1,
-		0, 0, -2 * f * n / (f - n), 0);
-	vec4 pp = projection * pv;
-
-	return pp;
 }
 
 // divide, viewport transform

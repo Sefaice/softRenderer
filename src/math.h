@@ -7,7 +7,7 @@
 
 #define M_PI 3.14159265358979323846f
 
-// structs
+// basic structs
 
 struct vec2 {
 	float x, y;
@@ -50,56 +50,6 @@ struct vec4 {
 	}
 };
 
-struct Vertex {
-	vec4 pos;
-	vec3 normal;
-	vec2 texCoords;
-
-	Vertex() : pos(vec4()), normal(vec3()), texCoords(vec2()) {}
-	Vertex(vec4 _pos, vec3 _normal, vec2 _texCoords) : pos(_pos), normal(_normal), texCoords(_texCoords) {}
-	void print() {
-		std::cout << "Vertex pos: ";
-		pos.print();
-		std::cout << "Vertex normal: ";
-		normal.print();
-		std::cout << "Vertex texture coords: ";
-		texCoords.print();
-	}
-};
-
-struct Triangle {
-	vec3 pos[3];
-	vec2 texCoords[3];
-	vec3 normal[3];
-};
-
-struct Texture {
-	int texWidth;
-	int texHeight;
-	int texNrChannels;
-	unsigned char* texData;
-
-	Texture(int _texWidth, int _texHeight, int _texNrChannels, unsigned char* _texData) : texWidth(_texWidth),
-		texHeight(_texHeight), texNrChannels(_texNrChannels), texData(_texData) {}
-	vec3 sampleTex(vec2 texCoords) {
-		vec3 color;
-		if (texCoords.x >= 0 && texCoords.x <= 1 && texCoords.y >= 0 && texCoords.y <= 1) {
-			int texCoordsX = texCoords.x * texWidth;
-			int texCoordsY = texCoords.y * texHeight;
-			//t1.print(); t2.print(); t3.print();
-			//printf("%f %f %d %d\n", texCoords.x, texCoords.y, texCoordsX, texCoordsY);
-			color.x = texData[texCoordsY * 3 * texWidth + texCoordsX * 3] / 255.0;
-			color.y = texData[texCoordsY * 3 * texWidth + texCoordsX * 3 + 1] / 255.0;
-			color.z = texData[texCoordsY * 3 * texWidth + texCoordsX * 3 + 2] / 255.0;
-		}
-		else {
-			//texCoords.print();
-		}
-
-		return color;
-	}
-};
-
 struct mat4 {  // column-major. m[0] is actually the first column of matrix 
 	float m[4][4];
 
@@ -137,11 +87,7 @@ struct mat4 {  // column-major. m[0] is actually the first column of matrix
 	}
 };
 
-// functions
-
-inline float maxInTwo(float a, float b) {
-	return a > b ? a : b;
-}
+// operators
 
 inline vec3 operator-(const vec3& v) {
 	return vec3(-v.x, v.y, -v.z);
@@ -157,23 +103,6 @@ inline vec3 operator-(const vec3& v1, const vec3& v2) {
 
 inline vec3 operator*(const vec3& v, float a) {
 	return vec3(v.x * a, v.y * a, v.z * a);
-}
-
-inline vec3 normalize(vec3& v) {
-	float length = v.length();
-	if (length == 0)
-		return vec3(99999, 99999, 99999);
-	return vec3(v.x / length, v.y / length, v.z / length);
-}
-
-inline float dot(const vec3& v1, const vec3& v2) {
-	return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
-}
-
-// 求反射向量的方向，v方向是从光源指向碰撞点，n必须为单位向量（v不用）
-inline vec3 reflect(const vec3& v, const vec3& n)
-{
-	return v + (-n * dot(v, n)) * 2;
 }
 
 inline vec4 operator*(const mat4& m, const vec4& v) {
@@ -205,6 +134,111 @@ inline mat4 operator*(const mat4& m1, const mat4& m2) {
 	return r;
 }
 
+// rasterization structs
+
+struct Vertex {
+	vec4 pos;
+	vec3 normal;
+	vec2 texCoords;
+	vec3 worldPos;
+
+	Vertex() : pos(vec4()), normal(vec3()), texCoords(vec2()), worldPos(vec3()) {}
+	Vertex(vec4 _pos, vec3 _normal, vec2 _texCoords, vec3 _worldPos) : pos(_pos), normal(_normal), texCoords(_texCoords), worldPos(_worldPos) {}
+	void print() {
+		std::cout << "Vertex pos: ";
+		pos.print();
+		std::cout << "Vertex normal: ";
+		normal.print();
+		std::cout << "Vertex texture coords: ";
+		texCoords.print();
+		std::cout << "Vertex world position: ";
+		worldPos.print();
+	}
+};
+
+struct Triangle {
+	vec3 pos[3];
+	vec2 texCoords[3];
+	vec3 normal[3];
+};
+
+struct Texture {
+	int texWidth;
+	int texHeight;
+	int texNrChannels;
+	unsigned char* texData;
+
+	Texture(int _texWidth, int _texHeight, int _texNrChannels, unsigned char* _texData) : texWidth(_texWidth),
+		texHeight(_texHeight), texNrChannels(_texNrChannels), texData(_texData) {}
+	vec3 sampleTex(vec2 texCoords) {
+		vec3 color;
+		if (texCoords.x >= 0 && texCoords.x <= 1 && texCoords.y >= 0 && texCoords.y <= 1) {
+			int texCoordsX = texCoords.x * texWidth;
+			int texCoordsY = texCoords.y * texHeight;
+			//t1.print(); t2.print(); t3.print();
+			//printf("%f %f %d %d\n", texCoords.x, texCoords.y, texCoordsX, texCoordsY);
+			color.x = texData[texCoordsY * 3 * texWidth + texCoordsX * 3] / 255.0;
+			color.y = texData[texCoordsY * 3 * texWidth + texCoordsX * 3 + 1] / 255.0;
+			color.z = texData[texCoordsY * 3 * texWidth + texCoordsX * 3 + 2] / 255.0;
+		}
+		else {
+			//texCoords.print();
+		}
+
+		return color;
+	}
+};
+
+struct VertexShader {
+	mat4 model;
+	mat4 view;
+	mat4 projection;
+
+	VertexShader(mat4 _model, mat4 _view, mat4 _projection) : model(_model), view(_view), projection(_projection) {}
+	vec4 MVP_transform(vec3 p) {
+		vec4 pl = vec4(p, 1.0); // homogenous coordinates
+
+		// local -> world
+		vec4 pw = model * pl;
+		// world -> view
+		vec4 pv = view * pw;
+		// view -> clip(perspective)
+		vec4 pp = projection * pv;
+
+		return pp;
+	}
+	vec3 getWorldPos(vec3 p) {
+		vec4 pl = vec4(p, 1.0);
+		vec4 pw = model * pl;
+
+		return vec3(pw.x, pw.y, pw.z);
+	}
+};
+
+// functions
+
+inline float maxInTwo(float a, float b) {
+	return a > b ? a : b;
+}
+
+
+inline vec3 normalize(vec3& v) {
+	float length = v.length();
+	if (length == 0)
+		return vec3(99999, 99999, 99999);
+	return vec3(v.x / length, v.y / length, v.z / length);
+}
+
+inline float dot(const vec3& v1, const vec3& v2) {
+	return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+}
+
+// 求反射向量的方向，v方向是从光源指向碰撞点，n必须为单位向量（v不用）
+inline vec3 reflect(const vec3& v, const vec3& n)
+{
+	return v + (-n * dot(v, n)) * 2;
+}
+
 inline vec2 lerp(vec2 v1, vec2 v2, float t) {
 	return vec2(v1.x * (1 - t) + v2.x * t, v1.y * (1 - t) + v2.y * t);
 }
@@ -220,7 +254,8 @@ inline vec4 lerp(vec4 v1, vec4 v2, float t) {
 }
 
 inline Vertex lerp(Vertex v1, Vertex v2, float t) {
-	return Vertex(lerp(v1.pos, v2.pos, t), lerp(v1.normal, v2.normal, t), lerp(v1.texCoords, v2.texCoords, t));
+	return Vertex(lerp(v1.pos, v2.pos, t), lerp(v1.normal, v2.normal, t), lerp(v1.texCoords, v2.texCoords, t), 
+		lerp(v1.worldPos, v2.worldPos, t));
 }
 
 inline float radians(float degree) {
@@ -258,3 +293,4 @@ inline mat4 scale(const mat4& m, float scaleAmount) {
 
 	return s * m;
 }
+

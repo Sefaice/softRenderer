@@ -47,5 +47,8 @@
     <ClInclude Include="..\..\src\stb_image.h">
       <Filter>源文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\vertexShader.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

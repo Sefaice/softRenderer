@@ -267,6 +267,16 @@ int main() {
 	a = m * a;
 	a.print();*/
 
+	/*mat4 t = mat4(1, -2, 3, 7, 5, -6, 7, 10, -9, 10, 11, 13, 13, 14, -15, 20);
+	t.print();
+	transpose(t).print();
+
+	inverse(t).print();*/
+
+	//vec3 v(1, 2, 3), n(4, 5, 6);
+	//vec3 ref = reflect(v, n);
+	//normalize(ref).print();
+
 	//system("pause");
 
 	return 0;

@@ -23,7 +23,7 @@ VertexShader* vertexShader;
 Texture* texture;
 
 // light
-vec3 lightPos(1.2f, 1.0f, 0.0f);
+vec3 lightPos(1.2f, 1.0f, 3.0f);
 vec3 lightColor(1.0f, 1.0f, 1.0f);
 vec3 viewPos(0, 0, 9);
 mat4 model_tmp; // use model for lighting temporarily
@@ -35,39 +35,39 @@ void InitRenderer(uint32_t* backBuffer, float* zbuffer, int backBufferWidth, int
 	t_backBufferWidth = backBufferWidth;
 	t_backBufferHeight = backBufferHeight;
 
-	// load texture
-	int imgWidth, imgHeight, imgNrChannels;
-	unsigned char* imgData = stbi_load("../../src/res/rock.png", &imgWidth, &imgHeight, &imgNrChannels, 0);
-	//printf("%d, %d %d %d\n", texWidth, texHeight, texNrChannels, sizeof(texData) / sizeof(unsigned char));
-	texture = new Texture(imgWidth, imgHeight, imgNrChannels, imgData);
+	//// load texture
+	//int imgWidth, imgHeight, imgNrChannels;
+	//unsigned char* imgData = stbi_load("../../src/res/rock.png", &imgWidth, &imgHeight, &imgNrChannels, 0);
+	////printf("%d, %d %d %d\n", texWidth, texHeight, texNrChannels, sizeof(texData) / sizeof(unsigned char));
+	//texture = new Texture(imgWidth, imgHeight, imgNrChannels, imgData);
 
-	// load objects
-	objl::Loader loader;
-	bool load = loader.LoadFile("../../src/res/models/rock.obj");
-	if (!load) {
-		std::cout << "Load obj file failed" << std::endl;
-	}
-	else {
-		std::cout << "Load obj file succeed" << std::endl;
+	//// load objects
+	//objl::Loader loader;
+	//bool load = loader.LoadFile("../../src/res/models/rock.obj");
+	//if (!load) {
+	//	std::cout << "Load obj file failed" << std::endl;
+	//}
+	//else {
+	//	std::cout << "Load obj file succeed" << std::endl;
 
-		for (auto mesh : loader.LoadedMeshes)
-		{
-			for (int i = 0; i < mesh.Vertices.size(); i += 3)
-			{
-				Triangle* t = new Triangle();
-				for (int j = 0; j < 3; j++) // a triangle each time
-				{
-					t->pos[j] = vec3(mesh.Vertices[i + j].Position.X, mesh.Vertices[i + j].Position.Y, mesh.Vertices[i + j].Position.Z);
-					t->texCoords[j] = vec2(mesh.Vertices[i + j].TextureCoordinate.X, mesh.Vertices[i + j].TextureCoordinate.Y);
-					t->normal[j] = vec3(mesh.Vertices[i + j].Normal.X, mesh.Vertices[i + j].Normal.Y, mesh.Vertices[i + j].Normal.Z);
-					//t->setVertex(j, Vector4f(mesh.Vertices[i + j].Position.X, mesh.Vertices[i + j].Position.Y, mesh.Vertices[i + j].Position.Z, 1.0));
-					/*t->setNormal(j, Vector3f(mesh.Vertices[i + j].Normal.X, mesh.Vertices[i + j].Normal.Y, mesh.Vertices[i + j].Normal.Z));
-					t->setTexCoord(j, Vector2f(mesh.Vertices[i + j].TextureCoordinate.X, mesh.Vertices[i + j].TextureCoordinate.Y));*/
-				}
-				modelTriangles.push_back(t);
-			}
-		}
-	}
+	//	for (auto mesh : loader.LoadedMeshes)
+	//	{
+	//		for (int i = 0; i < mesh.Vertices.size(); i += 3)
+	//		{
+	//			Triangle* t = new Triangle();
+	//			for (int j = 0; j < 3; j++) // a triangle each time
+	//			{
+	//				t->pos[j] = vec3(mesh.Vertices[i + j].Position.X, mesh.Vertices[i + j].Position.Y, mesh.Vertices[i + j].Position.Z);
+	//				t->texCoords[j] = vec2(mesh.Vertices[i + j].TextureCoordinate.X, mesh.Vertices[i + j].TextureCoordinate.Y);
+	//				t->normal[j] = vec3(mesh.Vertices[i + j].Normal.X, mesh.Vertices[i + j].Normal.Y, mesh.Vertices[i + j].Normal.Z);
+	//				//t->setVertex(j, Vector4f(mesh.Vertices[i + j].Position.X, mesh.Vertices[i + j].Position.Y, mesh.Vertices[i + j].Position.Z, 1.0));
+	//				/*t->setNormal(j, Vector3f(mesh.Vertices[i + j].Normal.X, mesh.Vertices[i + j].Normal.Y, mesh.Vertices[i + j].Normal.Z));
+	//				t->setTexCoord(j, Vector2f(mesh.Vertices[i + j].TextureCoordinate.X, mesh.Vertices[i + j].TextureCoordinate.Y));*/
+	//			}
+	//			modelTriangles.push_back(t);
+	//		}
+	//	}
+	//}
 }
 
 void UpdateBackBuffer(double dt) {
@@ -87,9 +87,9 @@ void UpdateBackBuffer(double dt) {
 	// model
 	mat4 model = mat4(1.0);
 	//model = translate(model, vec3(5.0f * float(sin(t_dtime)),0.0, 0.0));
-	model = translate(model, vec3(0.0, 0.0, 0.0));
-	//model = rotate(model, 2, vec3(-1, 2, 3));
-	model = rotate(model, t_dtime, vec3(-1, 2, 3));
+	//model = translate(model, vec3(0.0, 0.0, 0.0));
+	//model = rotate(model, 100.0, vec3(-1, 2, 3));
+	model = rotate(model, sin(t_dtime), vec3(-1, 2, 3));
 	//model = scale(model, 3.0f);
 	// view
 	vec3 cameraPos = viewPos;
@@ -132,25 +132,37 @@ void UpdateBackBuffer(double dt) {
 	//DrawLineWu(100, 700, 600, 100, backBuffer, backBufferWidth, backBufferHeight);
 	//// draw a 2D triangle
 	//DrawTriangle(vec3(100, 100, 0), vec3(300, 500, 0), vec3(500, 100, 0), vec3(0, 1, 0));
-	//
-	//// draw cube
-	//DrawTriangle3D(vec3(-1.0, 1.0, 0), vec3(1.0, -1.0, 0), vec3(-1.0, -1.0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // front
-	//DrawTriangle3D(vec3(-1.0, 1.0, 0), vec3(1.0, 1.0, 0), vec3(1.0, -1.0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
-	//
-	//DrawTriangle3D(vec3(1.0, 1.0, 0), vec3(1.0, -1.0, -2.0), vec3(1.0, -1.0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // right
-	//DrawTriangle3D(vec3(1.0, 1.0, 0), vec3(1.0, 1.0, -2.0), vec3(1.0, -1.0, -2.0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
-	//
-	//DrawTriangle3D(vec3(-1.0, 1.0, -2.0), vec3(1.0, 1.0, 0), vec3(-1.0, 1.0, 0.0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // top
-	//DrawTriangle3D(vec3(-1.0, 1.0, -2.0), vec3(1.0, 1.0, -2.0), vec3(1.0, 1.0, 0.0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
-	//
-	//DrawTriangle3D(vec3(-1.0, 1.0, -2.0), vec3(-1.0, -1.0, 0.0), vec3(-1.0, -1.0, -2.0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // left
-	//DrawTriangle3D(vec3(-1.0, 1.0, -2.0), vec3(-1.0, 1.0, 0.0), vec3(-1.0, -1.0, 0.0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
-	//
-	//DrawTriangle3D(vec3(1.0, 1.0, -2.0), vec3(-1.0, -1.0, -2.0), vec3(1.0, -1.0, -2.0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // back
-	//DrawTriangle3D(vec3(1.0, 1.0, -2.0), vec3(-1.0, 1.0, -2.0), vec3(-1.0, -1.0, -2.0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
-	//
-	//DrawTriangle3D(vec3(-1.0, -1.0, 0), vec3(1.0, -1.0, -2.0), vec3(-1.0, -1.0, -2.0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // bottom
-	//DrawTriangle3D(vec3(-1.0, -1.0, 0), vec3(1.0, -1.0, 0.0), vec3(1.0, -1.0, -2.0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
+	
+	// draw cube
+	DrawTriangle3D(vec3(-1.0, 1.0, 1.0), vec3(1.0, -1.0, 1.0), vec3(-1.0, -1.0, 1.0), 
+		vec3(0, 0, 1), vec3(0, 0, 1), vec3(0, 0, 1), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // front
+	DrawTriangle3D(vec3(-1.0, 1.0, 1.0), vec3(1.0, 1.0, 1.0), vec3(1.0, -1.0, 1.0), 
+		vec3(0, 0, 1), vec3(0, 0, 1), vec3(0, 0, 1), vec2(0, 1), vec2(1, 1), vec2(1, 0));
+	
+	DrawTriangle3D(vec3(1.0, 1.0, 1.0), vec3(1.0, -1.0, -1.0), vec3(1.0, -1.0, 1.0), 
+		vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // right
+	DrawTriangle3D(vec3(1.0, 1.0, 1.0), vec3(1.0, 1.0, -1.0), vec3(1.0, -1.0, -1.0), 
+		vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
+	
+	DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(1.0, 1.0, 1.0), vec3(-1.0, 1.0, 1.0), 
+		vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // top
+	DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(1.0, 1.0, -1.0), vec3(1.0, 1.0, 1.0), 
+		vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
+	
+	DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(-1.0, -1.0, 1.0), vec3(-1.0, -1.0, -1.0), 
+		vec3(-1.0, 0, 0), vec3(-1.0, 0, 0), vec3(-1.0, 0, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // left
+	DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(-1.0, 1.0, 1.0), vec3(-1.0, -1.0, 1.0), 
+		vec3(-1.0, 0, 0), vec3(-1.0, 0, 0), vec3(-1.0, 0, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
+	
+	DrawTriangle3D(vec3(1.0, 1.0, -1.0), vec3(-1.0, -1.0, -1.0), vec3(1.0, -1.0, -1.0), 
+		vec3(0, 0, -1), vec3(0, 0, -1), vec3(0, 0, -1), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // back
+	DrawTriangle3D(vec3(1.0, 1.0, -1.0), vec3(-1.0, 1.0, -1.0), vec3(-1.0, -1.0, -1.0), 
+		vec3(0, 0, -1), vec3(0, 0, -1), vec3(0, 0, -1), vec2(0, 1), vec2(1, 1), vec2(1, 0));
+	
+	DrawTriangle3D(vec3(-1.0, -1.0, 1.0), vec3(1.0, -1.0, -1.0), vec3(-1.0, -1.0, -1.0), 
+		vec3(0, -1, 0), vec3(0, -1, 0), vec3(0, -1, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // bottom
+	DrawTriangle3D(vec3(-1.0, -1.0, 1.0), vec3(1.0, -1.0, 1.0), vec3(1.0, -1.0, -1.0), 
+		vec3(0, -1, 0), vec3(0, -1, 0), vec3(0, -1, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
 
 	// test z
 	/*DrawTriangle3D(vec3(-5, 3, 0), vec3(0, 0, 0), vec3(-5, 0, 0.0),
@@ -161,12 +173,12 @@ void UpdateBackBuffer(double dt) {
 	DrawTriangle3D(vec3(-3, -1, 0), vec3(0, -1, 0.0), vec3(-5, -5, -3),
 		vec3(1.0, 0, 0), vec3(0, 1, 0), vec3(0, 0, 1));*/
 
-	// draw object
-	for (int i = 0; i < modelTriangles.size(); i++) {
-		DrawTriangle3D(modelTriangles[i]->pos[0], modelTriangles[i]->pos[1], modelTriangles[i]->pos[2], 
-			modelTriangles[i]->normal[0], modelTriangles[i]->normal[1], modelTriangles[i]->normal[2], // use normal as color temporarily
-			modelTriangles[i]->texCoords[0], modelTriangles[i]->texCoords[1], modelTriangles[i]->texCoords[2]);  // bottom
-	}
+	//// draw object
+	//for (int i = 0; i < modelTriangles.size(); i++) {
+	//	DrawTriangle3D(modelTriangles[i]->pos[0], modelTriangles[i]->pos[1], modelTriangles[i]->pos[2], 
+	//		modelTriangles[i]->normal[0], modelTriangles[i]->normal[1], modelTriangles[i]->normal[2], // use normal as color temporarily
+	//		modelTriangles[i]->texCoords[0], modelTriangles[i]->texCoords[1], modelTriangles[i]->texCoords[2]);  // bottom
+	//}
 }
 
 // draw single point
@@ -197,9 +209,9 @@ void DrawPoint(vec2 p, float z, vec3 color) {
 		// draw
 		uint32_t* frameBuffer = t_backBuffer + (int)(p.y) * t_backBufferWidth + (int)(p.x);
 
-		uint32_t r = (std::min)((uint32_t)(color.x * 255.9f), 255u); // convert float to 32 bit uint
-		uint32_t g = (std::min)((uint32_t)(color.y * 255.9f), 255u);
-		uint32_t b = (std::min)((uint32_t)(color.z * 255.9f), 255u);
+		uint32_t r = (std::min)((uint32_t)((std::max)(color.x, 0.0f) * 255.9f), 255u); // convert float to 32 bit uint
+		uint32_t g = (std::min)((uint32_t)((std::max)(color.y, 0.0f) * 255.9f), 255u);
+		uint32_t b = (std::min)((uint32_t)((std::max)(color.z, 0.0f) * 255.9f), 255u);
 
 		*frameBuffer = b | (g << 8) | (r << 16);
 	}
@@ -297,32 +309,30 @@ void DrawTriangle2D(vec3 p1, vec3 p2, vec3 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t
 				// SHADING (in fragment shader)
 
 				// sample in texture map
-				vec3 texColor = texture->sampleTex(texCoords);
-				//color = vec3(texCoords.x, texCoords.y, 0);
+				// vec3 texColor = texture->sampleTex(texCoords);
+				vec3 texColor = vec3(1.0, 0.5, 0.31);
 
 				// lighting
-				vec3 FragPos = worldPos;
 				// ambient
-				float ambientStrength = 0.7;
-				vec3 ambient = texColor * ambientStrength;
+				float ambientStrength = 0.3;
+				vec3 ambient = lightColor * ambientStrength;
 				// diffuse
 				vec3 norm = normalize(normal);
-				vec3 lightDir = lightPos - FragPos;
+				vec3 lightDir = lightPos - worldPos;
 				lightDir = normalize(lightDir);
 				float diff = maxInTwo(dot(norm, lightDir), 0.0);
-				vec3 diffuse = texColor * diff;
+				vec3 diffuse = lightColor * diff;
 				// specular
 				float specularStrength = 0.5;
-				vec3 viewDir = viewPos - FragPos;
+				vec3 viewDir = viewPos - worldPos;
 				viewDir = normalize(viewDir);
 				vec3 reflectDir = reflect(-lightDir, norm);
 				reflectDir = normalize(reflectDir);
-				float spec = pow(maxInTwo(dot(viewDir, reflectDir), 0.0), 2);
-				vec3 specular = texColor * specularStrength * spec;
+				float spec = pow(maxInTwo(dot(viewDir, reflectDir), 0.0), 32);
+				vec3 specular = lightColor * specularStrength * spec;
 
-				vec3 color = ambient + diffuse + specular;
+				vec3 color = (ambient + diffuse + specular) * texColor;
 				DrawPoint(vec2(x, y), z, color);
-				//DrawPoint(vec2(x, y), z, vec3(textureCoords.x, textureCoords.y, 0));
 			}
 		}
 		u0 += a1;
@@ -332,17 +342,12 @@ void DrawTriangle2D(vec3 p1, vec3 p2, vec3 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t
 }
 
 void DrawTriangle3D(vec3 p1, vec3 p2, vec3 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t1, vec2 t2, vec2 t3) {
-	vec4 p1p = vertexShader->MVP_transform(p1);
-	vec4 p2p = vertexShader->MVP_transform(p2);
-	vec4 p3p = vertexShader->MVP_transform(p3);
 
-	vec3 pw1 = vertexShader->getWorldPos(p1);
-	vec3 pw2 = vertexShader->getWorldPos(p2);
-	vec3 pw3 = vertexShader->getWorldPos(p3);
+	// vertex shader
+	Vertex v1 = vertexShader->vShader(p1, n1, t1);
+	Vertex v2 = vertexShader->vShader(p2, n2, t2);
+	Vertex v3 = vertexShader->vShader(p3, n3, t3);
 
-	Vertex v1 = Vertex(p1p, n1, t1, pw1);
-	Vertex v2 = Vertex(p2p, n2, t2, pw2);
-	Vertex v3 = Vertex(p3p, n3, t3, pw3);
 	// clip
 	std::vector<Vertex> vertices; vertices.push_back(v1); vertices.push_back(v2); vertices.push_back(v3);
 	std::vector<Vertex> result = Clip(vertices);

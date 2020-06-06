@@ -50,7 +50,26 @@ struct vec4 {
 	}
 };
 
-struct mat4 {  // column-major. m[0] is actually the first column of matrix 
+struct mat3 {
+	float m[3][3];
+	mat3() {
+		for (int i = 0; i < 3; i++)
+			for (int j = 0; j < 3; j++)
+				m[i][j] = 0;
+	}
+	void print() {
+		std::cout << std::fixed << std::setprecision(3);
+		std::cout << "mat3x3(";
+		for (int i = 0; i < 3; i++) {
+			std::cout << "(" << m[i][0] << ", " << m[i][1] << ", " << m[i][2] << ")";
+			if (i != 2) std::cout << ", ";
+		}
+		std::cout << ")" << std::endl;
+		std::cout << std::setprecision(0);
+	}
+};
+
+struct mat4 {  // COLUMN-MAJOR. m[0] is actually the first column of matrix 
 	float m[4][4];
 
 	mat4() {
@@ -90,7 +109,7 @@ struct mat4 {  // column-major. m[0] is actually the first column of matrix
 // operators
 
 inline vec3 operator-(const vec3& v) {
-	return vec3(-v.x, v.y, -v.z);
+	return vec3(-v.x, -v.y, -v.z);
 }
 
 inline vec3 operator+(const vec3& v1, const vec3& v2) {
@@ -103,6 +122,16 @@ inline vec3 operator-(const vec3& v1, const vec3& v2) {
 
 inline vec3 operator*(const vec3& v, float a) {
 	return vec3(v.x * a, v.y * a, v.z * a);
+}
+
+inline vec3 operator*(const vec3 v1, const vec3& v2) {
+	return vec3(v1.x * v2.x, v1.y * v2.y, v1.z * v2.z);
+}
+
+inline vec3 operator*(const mat3& m, const vec3& v) {
+	return vec3(m.m[0][0] * v.x + m.m[1][0] * v.y + m.m[2][0] * v.z,
+		m.m[0][1] * v.x + m.m[1][1] * v.y + m.m[2][1] * v.z,
+		m.m[0][2] * v.x + m.m[1][2] * v.y + m.m[2][2] * v.z);
 }
 
 inline vec4 operator*(const mat4& m, const vec4& v) {
@@ -128,6 +157,17 @@ inline mat4 operator*(const mat4& m1, const mat4& m2) {
 	for (int i = 0; i < 4; i++) {
 		for (int j = 0; j < 4; j++) {
 			r.m[i][j] = m1.m[i][0] * m2.m[0][j] + m1.m[i][1] * m2.m[1][j] + m1.m[i][2] * m2.m[2][j] + m1.m[i][3] * m2.m[3][j];
+		}
+	}
+
+	return r;
+}
+
+inline mat4 operator/(const mat4& m, float a) {
+	mat4 r;
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++) {
+			r.m[i][j] = m.m[i][j] / a;
 		}
 	}
 
@@ -189,38 +229,11 @@ struct Texture {
 	}
 };
 
-struct VertexShader {
-	mat4 model;
-	mat4 view;
-	mat4 projection;
-
-	VertexShader(mat4 _model, mat4 _view, mat4 _projection) : model(_model), view(_view), projection(_projection) {}
-	vec4 MVP_transform(vec3 p) {
-		vec4 pl = vec4(p, 1.0); // homogenous coordinates
-
-		// local -> world
-		vec4 pw = model * pl;
-		// world -> view
-		vec4 pv = view * pw;
-		// view -> clip(perspective)
-		vec4 pp = projection * pv;
-
-		return pp;
-	}
-	vec3 getWorldPos(vec3 p) {
-		vec4 pl = vec4(p, 1.0);
-		vec4 pw = model * pl;
-
-		return vec3(pw.x, pw.y, pw.z);
-	}
-};
-
 // functions
 
 inline float maxInTwo(float a, float b) {
 	return a > b ? a : b;
 }
-
 
 inline vec3 normalize(vec3& v) {
 	float length = v.length();
@@ -236,7 +249,7 @@ inline float dot(const vec3& v1, const vec3& v2) {
 // 求反射向量的方向，v方向是从光源指向碰撞点，n必须为单位向量（v不用）
 inline vec3 reflect(const vec3& v, const vec3& n)
 {
-	return v + (-n * dot(v, n)) * 2;
+	return v - n * dot(v, n) * 2;
 }
 
 inline vec2 lerp(vec2 v1, vec2 v2, float t) {
@@ -260,6 +273,80 @@ inline Vertex lerp(Vertex v1, Vertex v2, float t) {
 
 inline float radians(float degree) {
 	return degree * M_PI / 180.0f;
+}
+
+inline mat3 matrix3(const mat4 m) {
+	mat3 r;
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) {
+			r.m[i][j] = m.m[i][j];
+		}
+	}
+
+	return r;
+}
+
+inline mat4 transpose(const mat4& m) {
+	mat4 r;
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++) {
+			r.m[i][j] = m.m[j][i];
+		}
+	}
+
+	return r;
+}
+
+inline mat4 inverse(const mat4& m) {
+	float subfactor00 = m.m[2][2] * m.m[3][3] - m.m[3][2] * m.m[2][3]; // 00/10's minor
+	float subfactor01 = m.m[2][1] * m.m[3][3] - m.m[3][1] * m.m[2][3];
+	float subfactor02 = m.m[2][1] * m.m[3][2] - m.m[3][1] * m.m[2][2];
+	float subfactor03 = m.m[1][2] * m.m[3][3] - m.m[3][2] * m.m[1][3]; // 20
+	float subfactor04 = m.m[1][1] * m.m[3][3] - m.m[3][1] * m.m[1][3];
+	float subfactor05 = m.m[1][1] * m.m[3][2] - m.m[3][1] * m.m[1][2];
+	float subfactor06 = m.m[1][2] * m.m[2][3] - m.m[2][2] * m.m[1][3]; // 30
+	float subfactor07 = m.m[1][1] * m.m[2][3] - m.m[2][1] * m.m[1][3];
+	float subfactor08 = m.m[1][1] * m.m[2][2] - m.m[2][1] * m.m[1][2];
+	float subfactor09 = m.m[2][0] * m.m[3][3] - m.m[3][0] * m.m[2][3]; // 01/11
+	float subfactor10 = m.m[2][0] * m.m[3][2] - m.m[3][0] * m.m[2][2];
+	float subfactor11 = m.m[1][2] * m.m[3][3] - m.m[3][2] * m.m[1][3]; // 21
+	float subfactor12 = m.m[1][0] * m.m[3][3] - m.m[3][0] * m.m[1][3];
+	float subfactor13 = m.m[1][0] * m.m[3][2] - m.m[3][0] * m.m[1][2];
+	float subfactor14 = m.m[1][0] * m.m[2][3] - m.m[2][0] * m.m[1][3]; // 31
+	float subfactor15 = m.m[1][0] * m.m[2][2] - m.m[2][0] * m.m[1][2];
+	float subfactor16 = m.m[2][0] * m.m[3][1] - m.m[3][0] * m.m[2][1]; // 02/12
+	float subfactor17 = m.m[1][0] * m.m[3][1] - m.m[3][0] * m.m[1][1]; // 22
+	float subfactor18 = m.m[1][0] * m.m[2][1] - m.m[2][0] * m.m[1][1]; // 32
+
+	mat4 adjoint;
+	adjoint.m[0][0] = +(m.m[1][1] * subfactor00 - m.m[1][2] * subfactor01 + m.m[1][3] * subfactor02);
+	adjoint.m[0][1] = -(m.m[0][1] * subfactor00 - m.m[0][2] * subfactor01 + m.m[0][3] * subfactor02);
+	adjoint.m[0][2] = +(m.m[0][1] * subfactor03 - m.m[0][2] * subfactor04 + m.m[0][3] * subfactor05);
+	adjoint.m[0][3] = -(m.m[0][1] * subfactor06 - m.m[0][2] * subfactor07 + m.m[0][3] * subfactor08);
+	adjoint.m[1][0] = -(m.m[1][0] * subfactor00 - m.m[1][2] * subfactor09 + m.m[1][3] * subfactor10);
+	adjoint.m[1][1] = +(m.m[0][0] * subfactor00 - m.m[0][2] * subfactor09 + m.m[0][3] * subfactor10);
+	adjoint.m[1][2] = -(m.m[0][0] * subfactor11 - m.m[0][2] * subfactor12 + m.m[0][3] * subfactor13);
+	adjoint.m[1][3] = +(m.m[0][0] * subfactor06 - m.m[0][2] * subfactor14 + m.m[0][3] * subfactor15);
+	adjoint.m[2][0] = +(m.m[1][0] * subfactor01 - m.m[1][1] * subfactor09 + m.m[1][3] * subfactor16);
+	adjoint.m[2][1] = -(m.m[0][0] * subfactor01 - m.m[0][1] * subfactor09 + m.m[0][3] * subfactor16);
+	adjoint.m[2][2] = +(m.m[0][0] * subfactor04 - m.m[0][1] * subfactor12 + m.m[0][3] * subfactor17);
+	adjoint.m[2][3] = -(m.m[0][0] * subfactor07 - m.m[0][1] * subfactor14 + m.m[0][3] * subfactor18);
+	adjoint.m[3][0] = -(m.m[1][0] * subfactor02 - m.m[1][1] * subfactor10 + m.m[1][2] * subfactor16);
+	adjoint.m[3][1] = +(m.m[0][0] * subfactor02 - m.m[0][1] * subfactor10 + m.m[0][2] * subfactor16);
+	adjoint.m[3][2] = -(m.m[0][0] * subfactor05 - m.m[0][1] * subfactor13 + m.m[0][2] * subfactor17);
+	adjoint.m[3][3] = +(m.m[0][0] * subfactor08 - m.m[0][1] * subfactor15 + m.m[0][2] * subfactor18);
+
+	float determinant = m.m[0][0] * adjoint.m[0][0] + m.m[0][1] * adjoint.m[1][0]
+		+ m.m[0][2] * adjoint.m[2][0] + m.m[0][3] * adjoint.m[3][0];
+
+	if (determinant == 0.0f) {
+		printf("Inverse does not exist!\n");
+		return mat4();
+	}
+
+	// printf("determinant: %f\n", determinant);
+
+	return adjoint / determinant;
 }
 
 inline mat4 translate(const mat4& m, const vec3& v) {

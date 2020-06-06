@@ -2,6 +2,7 @@
 
 #include "2draster.h"
 #include "clip.h"
+#include "vertexShader.h"
 
 void InitRenderer(uint32_t* backBuffer, float* zbuffer, int backBufferWidth, int backBufferHeight);
 void UpdateBackBuffer(double dt);

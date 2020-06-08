@@ -23,7 +23,7 @@ VertexShader* vertexShader;
 Texture* texture;
 
 // light
-vec3 lightPos(1.2f, 1.0f, 3.0f);
+vec3 lightPos(1.0f, 1.0f, 2.0f);
 vec3 lightColor(1.0f, 1.0f, 1.0f);
 vec3 viewPos(0, 0, 9);
 mat4 model_tmp; // use model for lighting temporarily
@@ -326,12 +326,18 @@ void DrawTriangle2D(vec3 p1, vec3 p2, vec3 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t
 				float specularStrength = 0.5;
 				vec3 viewDir = viewPos - worldPos;
 				viewDir = normalize(viewDir);
-				vec3 reflectDir = reflect(-lightDir, norm);
-				reflectDir = normalize(reflectDir);
-				float spec = pow(maxInTwo(dot(viewDir, reflectDir), 0.0), 32);
+				//// phong
+				//vec3 reflectDir = reflect(-lightDir, norm);
+				//reflectDir = normalize(reflectDir);
+				//float spec = pow(maxInTwo(dot(viewDir, reflectDir), 0.0), 16);
+				// blinn-phong
+				vec3 halfwayDir = lightDir + viewDir;
+				halfwayDir = normalize(halfwayDir);
+				float spec = pow(maxInTwo(dot(norm, halfwayDir), 0.0), 64);
 				vec3 specular = lightColor * specularStrength * spec;
 
 				vec3 color = (ambient + diffuse + specular) * texColor;
+
 				DrawPoint(vec2(x, y), z, color);
 			}
 		}

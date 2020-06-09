@@ -1,4 +1,5 @@
 #include "3draster.h"
+
 #include "OBJ_Loader.h"
 
 #include <iostream>
@@ -15,6 +16,8 @@ int t_backBufferWidth, t_backBufferHeight;
 double t_dtime;
 
 std::vector<Triangle*> modelTriangles;
+
+Raster2d* raster2d;
 
 // shaders
 VertexShader* vertexShader;
@@ -34,40 +37,41 @@ void InitRenderer(uint32_t* backBuffer, float* zbuffer, int backBufferWidth, int
 	t_zBuffer = zbuffer;
 	t_backBufferWidth = backBufferWidth;
 	t_backBufferHeight = backBufferHeight;
+	raster2d = new Raster2d(backBuffer, zbuffer, backBufferWidth, backBufferHeight);
 
-	//// load texture
-	//int imgWidth, imgHeight, imgNrChannels;
-	//unsigned char* imgData = stbi_load("../../src/res/rock.png", &imgWidth, &imgHeight, &imgNrChannels, 0);
-	////printf("%d, %d %d %d\n", texWidth, texHeight, texNrChannels, sizeof(texData) / sizeof(unsigned char));
-	//texture = new Texture(imgWidth, imgHeight, imgNrChannels, imgData);
+	// load texture
+	int imgWidth, imgHeight, imgNrChannels;
+	unsigned char* imgData = stbi_load("../../src/res/rock.png", &imgWidth, &imgHeight, &imgNrChannels, 0);
+	//printf("%d, %d %d %d\n", texWidth, texHeight, texNrChannels, sizeof(texData) / sizeof(unsigned char));
+	texture = new Texture(imgWidth, imgHeight, imgNrChannels, imgData);
 
-	//// load objects
-	//objl::Loader loader;
-	//bool load = loader.LoadFile("../../src/res/models/rock.obj");
-	//if (!load) {
-	//	std::cout << "Load obj file failed" << std::endl;
-	//}
-	//else {
-	//	std::cout << "Load obj file succeed" << std::endl;
+	// load objects
+	objl::Loader loader;
+	bool load = loader.LoadFile("../../src/res/models/rock.obj");
+	if (!load) {
+		std::cout << "Load obj file failed" << std::endl;
+	}
+	else {
+		std::cout << "Load obj file succeed" << std::endl;
 
-	//	for (auto mesh : loader.LoadedMeshes)
-	//	{
-	//		for (int i = 0; i < mesh.Vertices.size(); i += 3)
-	//		{
-	//			Triangle* t = new Triangle();
-	//			for (int j = 0; j < 3; j++) // a triangle each time
-	//			{
-	//				t->pos[j] = vec3(mesh.Vertices[i + j].Position.X, mesh.Vertices[i + j].Position.Y, mesh.Vertices[i + j].Position.Z);
-	//				t->texCoords[j] = vec2(mesh.Vertices[i + j].TextureCoordinate.X, mesh.Vertices[i + j].TextureCoordinate.Y);
-	//				t->normal[j] = vec3(mesh.Vertices[i + j].Normal.X, mesh.Vertices[i + j].Normal.Y, mesh.Vertices[i + j].Normal.Z);
-	//				//t->setVertex(j, Vector4f(mesh.Vertices[i + j].Position.X, mesh.Vertices[i + j].Position.Y, mesh.Vertices[i + j].Position.Z, 1.0));
-	//				/*t->setNormal(j, Vector3f(mesh.Vertices[i + j].Normal.X, mesh.Vertices[i + j].Normal.Y, mesh.Vertices[i + j].Normal.Z));
-	//				t->setTexCoord(j, Vector2f(mesh.Vertices[i + j].TextureCoordinate.X, mesh.Vertices[i + j].TextureCoordinate.Y));*/
-	//			}
-	//			modelTriangles.push_back(t);
-	//		}
-	//	}
-	//}
+		for (auto mesh : loader.LoadedMeshes)
+		{
+			for (int i = 0; i < mesh.Vertices.size(); i += 3)
+			{
+				Triangle* t = new Triangle();
+				for (int j = 0; j < 3; j++) // a triangle each time
+				{
+					t->pos[j] = vec3(mesh.Vertices[i + j].Position.X, mesh.Vertices[i + j].Position.Y, mesh.Vertices[i + j].Position.Z);
+					t->texCoords[j] = vec2(mesh.Vertices[i + j].TextureCoordinate.X, mesh.Vertices[i + j].TextureCoordinate.Y);
+					t->normal[j] = vec3(mesh.Vertices[i + j].Normal.X, mesh.Vertices[i + j].Normal.Y, mesh.Vertices[i + j].Normal.Z);
+					//t->setVertex(j, Vector4f(mesh.Vertices[i + j].Position.X, mesh.Vertices[i + j].Position.Y, mesh.Vertices[i + j].Position.Z, 1.0));
+					/*t->setNormal(j, Vector3f(mesh.Vertices[i + j].Normal.X, mesh.Vertices[i + j].Normal.Y, mesh.Vertices[i + j].Normal.Z));
+					t->setTexCoord(j, Vector2f(mesh.Vertices[i + j].TextureCoordinate.X, mesh.Vertices[i + j].TextureCoordinate.Y));*/
+				}
+				modelTriangles.push_back(t);
+			}
+		}
+	}
 }
 
 void UpdateBackBuffer(double dt) {
@@ -117,6 +121,7 @@ void UpdateBackBuffer(double dt) {
 		0, 2 * n / (t - b), 0, 0,
 		(r + l) / (r - l), (t + b) / (t - b), -(f + n) / (f - n), -1,
 		0, 0, -2 * f * n / (f - n), 0);
+
 	// shaders
 	vertexShader = new VertexShader(model, view, projection);
 
@@ -181,53 +186,17 @@ void UpdateBackBuffer(double dt) {
 	//}
 }
 
-// draw single point
-// notice that GDI origin is lower-left corner
-void DrawPoint(vec2 p, float z, vec3 color) {
-	//for (int y = 0; y < frameHeight; y++) 
-	//{
-	//	for (int x = 0; x < frameWidth; x++)
-	//	{
-	//		if (x == p.x && y >= 700) {
-	//			frameBuffer[0] = 0.9;
-	//			frameBuffer[1] = 0.1;
-	//			frameBuffer[2] = 0.1;
-	//		}
-
-	//		frameBuffer += 4; // C pointers add by type width(float/4B)
-	//	}
-	//}
-
-	/*if (p.x < 0 || p.x >= t_backBufferWidth || p.y < 0 || p.y >= t_backBufferHeight)
-		return;*/
-	//printf("final p: %d %d\n", p.x, p.y);
-
-	float* zBuffer = t_zBuffer + (int)(p.y) * t_backBufferWidth + (int)(p.x);
-	if (z < zBuffer[0]) { // pass z test
-		// update z-buffer
-		zBuffer[0] = z;
-		// draw
-		uint32_t* frameBuffer = t_backBuffer + (int)(p.y) * t_backBufferWidth + (int)(p.x);
-
-		uint32_t r = (std::min)((uint32_t)((std::max)(color.x, 0.0f) * 255.9f), 255u); // convert float to 32 bit uint
-		uint32_t g = (std::min)((uint32_t)((std::max)(color.y, 0.0f) * 255.9f), 255u);
-		uint32_t b = (std::min)((uint32_t)((std::max)(color.z, 0.0f) * 255.9f), 255u);
-
-		*frameBuffer = b | (g << 8) | (r << 16);
-	}
-}
-
 // draw triangle by line equation / center
 void DrawTriangle2D(vec3 p1, vec3 p2, vec3 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t1, vec2 t2, vec2 t3,
 	vec3 pw1, vec3 pw2, vec3 pw3) {
 
 #if POLYGON_MODE // draw frame in polygon mode
-	//DrawLine(p1.x, p1.y, p2.x, p2.y, t_backBufferWidth, t_backBufferHeight);
-	//DrawLine(p2.x, p2.y, p3.x, p3.y, t_backBufferWidth, t_backBufferHeight);
-	//DrawLine(p3.x, p3.y, p1.x, p1.y, t_backBufferWidth, t_backBufferHeight);
-	DrawLineWu(p1.x, p1.y, p2.x, p2.y, t_backBufferWidth, t_backBufferHeight);
-	DrawLineWu(p2.x, p2.y, p3.x, p3.y, t_backBufferWidth, t_backBufferHeight);
-	DrawLineWu(p3.x, p3.y, p1.x, p1.y, t_backBufferWidth, t_backBufferHeight);
+	/*raster2d->DrawLine(p1.x, p1.y, p2.x, p2.y);
+	raster2d->DrawLine(p2.x, p2.y, p3.x, p3.y);
+	raster2d->DrawLine(p3.x, p3.y, p1.x, p1.y);*/
+	raster2d->DrawLineWu(p1.x, p1.y, p2.x, p2.y);
+	raster2d->DrawLineWu(p2.x, p2.y, p3.x, p3.y);
+	raster2d->DrawLineWu(p3.x, p3.y, p1.x, p1.y);
 #else
 
 	int maxx = maxInThree(p1.x, p2.x, p3.x), minx = minInThree(p1.x, p2.x, p3.x),
@@ -307,38 +276,10 @@ void DrawTriangle2D(vec3 p1, vec3 p2, vec3 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t
 				worldPos.z = z * (pw1.z / p1.z * (1 - u - v) + pw2.z / p2.z * v + pw3.z / p3.z * u);
 
 				// SHADING (in fragment shader)
+				FragmentShader* fragmentShader = new FragmentShader();
+				vec3 color = fragmentShader->fragmentShader_phong(texture, normal, texCoords, worldPos, lightColor, lightPos, viewPos);
 
-				// sample in texture map
-				// vec3 texColor = texture->sampleTex(texCoords);
-				vec3 texColor = vec3(1.0, 0.5, 0.31);
-
-				// lighting
-				// ambient
-				float ambientStrength = 0.3;
-				vec3 ambient = lightColor * ambientStrength;
-				// diffuse
-				vec3 norm = normalize(normal);
-				vec3 lightDir = lightPos - worldPos;
-				lightDir = normalize(lightDir);
-				float diff = maxInTwo(dot(norm, lightDir), 0.0);
-				vec3 diffuse = lightColor * diff;
-				// specular
-				float specularStrength = 0.5;
-				vec3 viewDir = viewPos - worldPos;
-				viewDir = normalize(viewDir);
-				//// phong
-				//vec3 reflectDir = reflect(-lightDir, norm);
-				//reflectDir = normalize(reflectDir);
-				//float spec = pow(maxInTwo(dot(viewDir, reflectDir), 0.0), 16);
-				// blinn-phong
-				vec3 halfwayDir = lightDir + viewDir;
-				halfwayDir = normalize(halfwayDir);
-				float spec = pow(maxInTwo(dot(norm, halfwayDir), 0.0), 64);
-				vec3 specular = lightColor * specularStrength * spec;
-
-				vec3 color = (ambient + diffuse + specular) * texColor;
-
-				DrawPoint(vec2(x, y), z, color);
+				raster2d->DrawPoint(vec2(x, y), z, color);
 			}
 		}
 		u0 += a1;

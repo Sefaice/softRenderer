@@ -2,11 +2,8 @@
 
 #include "math.h"
 
-struct VertexShader {
-	mat4 model;
-	mat4 view;
-	mat4 projection;
-
+class VertexShader {
+public:
 	VertexShader(mat4 _model, mat4 _view, mat4 _projection) : model(_model), view(_view), projection(_projection) {}
 	vec4 MVP_transform(vec3 p) {
 		vec4 pl = vec4(p, 1.0); // homogenous coordinates
@@ -33,4 +30,9 @@ struct VertexShader {
 
 		return Vertex(pp, n_world, t, pw);
 	}
+private:
+	mat4 model;
+	mat4 view;
+	mat4 projection;
+
 };

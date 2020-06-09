@@ -1,7 +1,46 @@
 #include "2draster.h"
 
+Raster2d::Raster2d(uint32_t* backBuffer, float* zBuffer, int backBufferWidth, int backBufferHeight)
+	: t_backBuffer(backBuffer), t_zBuffer(zBuffer), t_backBufferWidth(backBufferWidth), t_backBufferHeight(backBufferHeight) {}
+
+// draw single point
+// notice that GDI origin is lower-left corner
+void Raster2d::DrawPoint(vec2 p, float z, vec3 color) {
+	//for (int y = 0; y < frameHeight; y++) 
+	//{
+	//	for (int x = 0; x < frameWidth; x++)
+	//	{
+	//		if (x == p.x && y >= 700) {
+	//			frameBuffer[0] = 0.9;
+	//			frameBuffer[1] = 0.1;
+	//			frameBuffer[2] = 0.1;
+	//		}
+
+	//		frameBuffer += 4; // C pointers add by type width(float/4B)
+	//	}
+	//}
+
+	/*if (p.x < 0 || p.x >= t_backBufferWidth || p.y < 0 || p.y >= t_backBufferHeight)
+		return;*/
+		//printf("final p: %d %d\n", p.x, p.y);
+
+	float* zBuffer = t_zBuffer + (int)(p.y) * t_backBufferWidth + (int)(p.x);
+	if (z < zBuffer[0]) { // pass z test
+		// update z-buffer
+		zBuffer[0] = z;
+		// draw
+		uint32_t* frameBuffer = t_backBuffer + (int)(p.y) * t_backBufferWidth + (int)(p.x);
+
+		uint32_t r = (std::min)((uint32_t)((std::max)(color.x, 0.0f) * 255.9f), 255u); // convert float to 32 bit uint
+		uint32_t g = (std::min)((uint32_t)((std::max)(color.y, 0.0f) * 255.9f), 255u);
+		uint32_t b = (std::min)((uint32_t)((std::max)(color.z, 0.0f) * 255.9f), 255u);
+
+		*frameBuffer = b | (g << 8) | (r << 16);
+	}
+}
+
 // draw line by Bresenham Algorithm
-void DrawLine(int x0, int y0, int x1, int y1, int backBufferWidth, int backBufferHeight) {
+void Raster2d::DrawLine(int x0, int y0, int x1, int y1) {
 	vec2* points;
 	int pointsNum;
 
@@ -93,14 +132,14 @@ float rfpart(float x) {
 	return 1 - fpart(x);
 }
 
-void DrawPointWu(vec2 p, float z, vec3 color, int backBufferWidth, int backBufferHeight) {
-	if (p.x >= 0 && p.x < backBufferWidth && p.y >= 0 && p.y < backBufferHeight) {
+void Raster2d::DrawPointWu(vec2 p, float z, vec3 color) {
+	if (p.x >= 0 && p.x < t_backBufferWidth && p.y >= 0 && p.y < t_backBufferHeight) {
 		DrawPoint(p, 0, color);
 	}
 }
 
 // wu's line algorithm
-void DrawLineWu(float x0, float y0, float x1, float y1, int backBufferWidth, int backBufferHeight) {
+void Raster2d::DrawLineWu(float x0, float y0, float x1, float y1) {
 	bool steep = abs(y1 - y0) > abs(x1 - x0); // if flip in first Quadrant
 
 	if (steep) {
@@ -125,12 +164,12 @@ void DrawLineWu(float x0, float y0, float x1, float y1, int backBufferWidth, int
 	int xpxl1 = xend;
 	int ypxl1 = floor(yend);
 	if (steep) {
-		DrawPointWu(vec2(ypxl1, xpxl1), 0, vec3(rfpart(yend) * xgap), backBufferWidth, backBufferHeight);
-		DrawPointWu(vec2(ypxl1 + 1, xpxl1), 0, vec3(fpart(yend) * xgap), backBufferWidth, backBufferHeight);
+		DrawPointWu(vec2(ypxl1, xpxl1), 0, vec3(rfpart(yend) * xgap));
+		DrawPointWu(vec2(ypxl1 + 1, xpxl1), 0, vec3(fpart(yend) * xgap));
 	}
 	else {
-		DrawPointWu(vec2(xpxl1, ypxl1), 0, vec3(rfpart(yend) * xgap), backBufferWidth, backBufferHeight);
-		DrawPointWu(vec2(xpxl1, ypxl1 + 1), 0, vec3(fpart(yend) * xgap), backBufferWidth, backBufferHeight);
+		DrawPointWu(vec2(xpxl1, ypxl1), 0, vec3(rfpart(yend) * xgap));
+		DrawPointWu(vec2(xpxl1, ypxl1 + 1), 0, vec3(fpart(yend) * xgap));
 
 	}
 
@@ -143,26 +182,26 @@ void DrawLineWu(float x0, float y0, float x1, float y1, int backBufferWidth, int
 	int xpxl2 = xend;
 	int ypxl2 = floor(yend);
 	if (steep) {
-		DrawPointWu(vec2(ypxl2, xpxl2), 0, vec3(rfpart(yend) * xgap), backBufferWidth, backBufferHeight);
-		DrawPointWu(vec2(ypxl2 + 1, xpxl2), 0, vec3(fpart(yend) * xgap), backBufferWidth, backBufferHeight);
+		DrawPointWu(vec2(ypxl2, xpxl2), 0, vec3(rfpart(yend) * xgap));
+		DrawPointWu(vec2(ypxl2 + 1, xpxl2), 0, vec3(fpart(yend) * xgap));
 	}
 	else {
-		DrawPointWu(vec2(xpxl2, ypxl2), 0, vec3(rfpart(yend) * xgap), backBufferWidth, backBufferHeight);
-		DrawPointWu(vec2(xpxl2, ypxl2 + 1), 0, vec3(fpart(yend) * xgap), backBufferWidth, backBufferHeight);
+		DrawPointWu(vec2(xpxl2, ypxl2), 0, vec3(rfpart(yend) * xgap));
+		DrawPointWu(vec2(xpxl2, ypxl2 + 1), 0, vec3(fpart(yend) * xgap));
 	}
 
 	// main loop
 	if (steep) {
 		for (int x = xpxl1 + 1; x <= xpxl2 - 1; x++) {
-			DrawPointWu(vec2((int)floor(intery), x), 0, vec3(rfpart(intery)), backBufferWidth, backBufferHeight);
-			DrawPointWu(vec2((int)(floor(intery) + 1), x), 0, vec3(fpart(intery)), backBufferWidth, backBufferHeight);
+			DrawPointWu(vec2((int)floor(intery), x), 0, vec3(rfpart(intery)));
+			DrawPointWu(vec2((int)(floor(intery) + 1), x), 0, vec3(fpart(intery)));
 			intery = intery + gradient;
 		}
 	}
 	else {
 		for (int x = xpxl1 + 1; x <= xpxl2 - 1; x++) {
-			DrawPointWu(vec2(x, (int)floor(intery)), 0, vec3(rfpart(intery)), backBufferWidth, backBufferHeight);
-			DrawPointWu(vec2(x, (int)(floor(intery) + 1)), 0, vec3(fpart(intery)), backBufferWidth, backBufferHeight);
+			DrawPointWu(vec2(x, (int)floor(intery)), 0, vec3(rfpart(intery)));
+			DrawPointWu(vec2(x, (int)(floor(intery) + 1)), 0, vec3(fpart(intery)));
 			intery = intery + gradient;
 		}
 	}

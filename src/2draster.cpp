@@ -115,9 +115,7 @@ void Raster2d::DrawLine(int x0, int y0, int x1, int y1) {
 
 	// draw
 	for (int i = 0; i < pointsNum; i++) {
-		//if (points[i].x >= 0 && points[i].x < backBufferWidth && points[i].y >= 0 && points[i].y < backBufferHeight) {
-			DrawPoint(points[i], 0, vec3(1.0));
-		//}
+		DrawPoint(points[i], 0, vec3(1.0));
 	}
 
 	delete[] points;
@@ -132,7 +130,7 @@ float rfpart(float x) {
 	return 1 - fpart(x);
 }
 
-void Raster2d::DrawPointWu(vec2 p, float z, vec3 color) {
+void Raster2d::DrawPointWu(vec2 p, float z, vec3 color) { // simply filter outliers
 	if (p.x >= 0 && p.x < t_backBufferWidth && p.y >= 0 && p.y < t_backBufferHeight) {
 		DrawPoint(p, 0, color);
 	}

@@ -57,6 +57,13 @@ struct mat3 {
 			for (int j = 0; j < 3; j++)
 				m[i][j] = 0;
 	}
+	mat3(float _x1, float _x2, float _x3, 
+		float _x4, float _x5, float _x6, 
+		float _x7, float _x8, float _x9) {
+		m[0][0] = _x1; m[0][1] = _x2; m[0][2] = _x3;
+		m[1][0] = _x4; m[1][1] = _x5; m[1][2] = _x6;
+		m[2][0] = _x7; m[2][1] = _x8; m[2][2] = _x9;
+	}
 	void print() {
 		std::cout << std::fixed << std::setprecision(3);
 		std::cout << "mat3x3(";
@@ -124,8 +131,12 @@ inline vec3 operator*(const vec3& v, float a) {
 	return vec3(v.x * a, v.y * a, v.z * a);
 }
 
-inline vec3 operator*(const vec3 v1, const vec3& v2) {
+inline vec3 operator*(const vec3& v1, const vec3& v2) {
 	return vec3(v1.x * v2.x, v1.y * v2.y, v1.z * v2.z);
+}
+
+inline vec3 operator/(const vec3& v, float a) {
+	return vec3(v.x / a, v.y / a, v.z / a);
 }
 
 inline vec3 operator*(const mat3& m, const vec3& v) {
@@ -202,33 +213,6 @@ struct Triangle {
 	vec3 normal[3];
 };
 
-struct Texture {
-	int texWidth;
-	int texHeight;
-	int texNrChannels;
-	unsigned char* texData;
-
-	Texture(int _texWidth, int _texHeight, int _texNrChannels, unsigned char* _texData) : texWidth(_texWidth),
-		texHeight(_texHeight), texNrChannels(_texNrChannels), texData(_texData) {}
-	vec3 sampleTex(vec2 texCoords) {
-		vec3 color;
-		if (texCoords.x >= 0 && texCoords.x <= 1 && texCoords.y >= 0 && texCoords.y <= 1) {
-			int texCoordsX = texCoords.x * texWidth;
-			int texCoordsY = texCoords.y * texHeight;
-			//t1.print(); t2.print(); t3.print();
-			//printf("%f %f %d %d\n", texCoords.x, texCoords.y, texCoordsX, texCoordsY);
-			color.x = texData[texCoordsY * 3 * texWidth + texCoordsX * 3] / 255.0;
-			color.y = texData[texCoordsY * 3 * texWidth + texCoordsX * 3 + 1] / 255.0;
-			color.z = texData[texCoordsY * 3 * texWidth + texCoordsX * 3 + 2] / 255.0;
-		}
-		else {
-			//texCoords.print();
-		}
-
-		return color;
-	}
-};
-
 // functions
 
 inline float maxInTwo(float a, float b) {
@@ -244,6 +228,10 @@ inline vec3 normalize(vec3& v) {
 
 inline float dot(const vec3& v1, const vec3& v2) {
 	return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+}
+
+inline vec3 cross(const vec3& v1, const vec3& v2) {
+	return vec3(v1.y * v2.z - v2.y * v1.z, v2.x * v1.z - v1.x * v2.z, v1.x * v2.y - v2.x * v1.y);
 }
 
 // 求反射向量的方向，v方向是从光源指向碰撞点，n必须为单位向量（v不用）
@@ -358,7 +346,7 @@ inline mat4 translate(const mat4& m, const vec3& v) {
 	return t * m;
 }
 
-inline mat4 rotate(const mat4& m, float angle, vec3 axis) { // angle is in [0, 360]
+inline mat4 rotate(const mat4& m, float angle, vec3 axis) { // angle is in radians
 	axis = normalize(axis);
 	float a = cos(angle / 2);
 	float b = sin(angle / 2) * axis.x;

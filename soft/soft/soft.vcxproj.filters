@@ -53,5 +53,8 @@
     <ClInclude Include="..\..\src\fragmentShader.h">
       <Filter>源文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\texture.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

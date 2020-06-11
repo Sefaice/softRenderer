@@ -274,8 +274,7 @@ int main() {
 	inverse(t).print();*/
 
 	//vec3 v(1, 2, 3), n(4, 5, 6);
-	//vec3 ref = reflect(v, n);
-	//normalize(ref).print();
+	//cross(n, v).print();
 
 	//system("pause");
 

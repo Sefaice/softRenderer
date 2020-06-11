@@ -13,12 +13,14 @@ softRenderer
   * viewport transform
   * z buffer
   * top-left rule
-  * vertex z interpolation, color interpolation
   * polygon mode
+  * vertex z interpolation & other attributes interpolation
+  * naive texture mapping
+  * (Blinn-)Phong lighting model
 * SSAA
 
 TODOS:
-* shading color
-* back face culling
-* Anti-Aliasing
-* 优化方法：Rendering Blocks of Pixels
+* back face culling(改顶点顺序为counter-clockwise?（会影响到2d raster）)
+* MSAA
+* obj loader implementation
+* 优化方法：Rendering Blocks of Pixels；提升帧率

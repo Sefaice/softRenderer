@@ -10,11 +10,11 @@ void UpdateBackBuffer(double dt);
 
 // 2D rasterization
 
-void DrawTriangle2D(vec3 p1, vec3 p2, vec3 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t1, vec2 t2, vec2 t3, 
+void DrawTriangle2D(vec4 p1, vec4 p2, vec4 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t1, vec2 t2, vec2 t3, 
 	vec3 pw1, vec3 pw2, vec3 pw3);
 
 // 3D rasterization
 
 void DrawTriangle3D(vec3 p1, vec3 p2, vec3 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t1, vec2 t2, vec2 t3);
 
-vec3 DV_transform(vec4 p);
+vec4 DV_transform(vec4 p);

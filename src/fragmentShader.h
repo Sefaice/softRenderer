@@ -11,12 +11,23 @@ public:
 		vec3 texColor = texture->sampleTex(texCoords);
 		//vec3 texColor = texture->getColor(texCoords);
 
-		if (texCoords.x >= 0.1 && texCoords.x <= 1.0 && texCoords.y >= 0.1 && texCoords.y <= 1.0) {
+		/*if (texCoords.x >= 0.1 && texCoords.x <= 1.0 && texCoords.y >= 0.1 && texCoords.y <= 1.0) {
 			return vec3(0, 0, 1);
-		}
-		
-		//return texColor;
-		return vec3(texCoords.x, texCoords.y, 0);
+		}*/
+		/*if (texCoords.y >= 0.0 && texCoords.y <= 0.1) return vec3(0, 0, 0.1);
+		if (texCoords.y >= 0.1 && texCoords.y <= 0.2) return vec3(0, 0, 0.2);
+		if (texCoords.y >= 0.2 && texCoords.y <= 0.3) return vec3(0, 0, 0.3);
+		if (texCoords.y >= 0.3 && texCoords.y <= 0.4) return vec3(0, 0, 0.4);
+		if (texCoords.y >= 0.4 && texCoords.y <= 0.5) return vec3(0, 0, 0.5);
+		if (texCoords.y >= 0.5 && texCoords.y <= 0.6) return vec3(0, 0, 0.6);
+		if (texCoords.y >= 0.6 && texCoords.y <= 0.7) return vec3(0, 0, 0.7);
+		if (texCoords.y >= 0.7 && texCoords.y <= 0.8) return vec3(0, 0, 0.8);
+		if (texCoords.y >= 0.8 && texCoords.y <= 0.9) return vec3(0, 0, 0.9);
+		if (texCoords.y >= 0.9 && texCoords.y <= 1.0) return vec3(0, 0, 1);*/
+
+
+		return texColor;
+		//return vec3(texCoords.x, texCoords.y, 0);
 	}
 	vec3 shading_phong(vec3 normal, vec2 texCoords, vec3 worldPos) {
 		// sample in texture map

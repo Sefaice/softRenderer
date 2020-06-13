@@ -115,6 +115,10 @@ struct mat4 {  // COLUMN-MAJOR. m[0] is actually the first column of matrix
 
 // operators
 
+inline vec2 operator*(const vec2& v, float a) {
+	return vec2(v.x * a, v.y * a);
+}
+
 inline vec3 operator-(const vec3& v) {
 	return vec3(-v.x, -v.y, -v.z);
 }

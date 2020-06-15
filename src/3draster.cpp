@@ -23,6 +23,10 @@ FragmentShader* fragmentShader;
 // texture
 Texture* texture;
 
+// view frustum
+float frustum_n = .1f;
+float frustum_f = 100.0f;
+
 // light
 vec3 lightPos(1.0f, 1.0f, 2.0f);
 vec3 lightColor(1.0f, 1.0f, 1.0f);
@@ -105,15 +109,14 @@ void UpdateBackBuffer(double dt) {
 	// projection
 	float fov = 45.0f;
 	float ar = (float)t_backBufferWidth / (float)t_backBufferHeight;
-	float n = .1f, f = 100.0f;
 	float tanHalfHFOV = tanf(radians(fov / 2.0f)) * ar;
 	float tanHalfVFOV = tanf(radians(fov / 2.0f));
-	float r = n * tanHalfHFOV, l = -n * tanHalfHFOV;
-	float t = n * tanHalfVFOV, b = -n * tanHalfVFOV;
-	mat4 projection = mat4(2 * n / (r - l), 0, 0, 0,
-		0, 2 * n / (t - b), 0, 0,
-		(r + l) / (r - l), (t + b) / (t - b), -(f + n) / (f - n), -1,
-		0, 0, -2 * f * n / (f - n), 0);
+	float r = frustum_n * tanHalfHFOV, l = -frustum_n * tanHalfHFOV;
+	float t = frustum_n * tanHalfVFOV, b = -frustum_n * tanHalfVFOV;
+	mat4 projection = mat4(2 * frustum_n / (r - l), 0, 0, 0,
+		0, 2 * frustum_n / (t - b), 0, 0,
+		(r + l) / (r - l), (t + b) / (t - b), -(frustum_f + frustum_n) / (frustum_f - frustum_n), -1,
+		0, 0, -2 * frustum_f * frustum_n / (frustum_f - frustum_n), 0);
 
 	// shaders
 	vertexShader = new VertexShader(model, view, projection);
@@ -246,24 +249,14 @@ void DrawTriangle2D(vec4 p1, vec4 p2, vec4 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t
 				((o_y31 > 0 && onEdge31) || (o_y12 == 0 && o_x12 > 0 && onEdge12))); // 31 left, 12 top
 
 			if (u > 0 && v > 0 && u + v < 1 || overlap) {
-				// TODO: Inside your rasterization loop:
-				//    * v[i].w() is the vertex view space depth value z.
-				//    * Z is interpolated view space depth for the current pixel
-				//    * zp is depth between zNear and zFar, used for z-buffer
-
-				// float Z = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
-				// float zp = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
-				// zp *= Z;
 				// interpolation
-				// z interpolation
 				float inte_tmp1 = (1 - u - v) * p1.w;
 				float inte_tmp2 = v * p2.w;
 				float inte_tmp3 = u * p3.w;
-				float z = 1 / (inte_tmp1 + inte_tmp2 + inte_tmp3);
-				float zp = 1 / ((1 - u - v) / p1.z + v / p2.z + u / p3.z);
-
-
-				printf("%f %f\n", z, zp);
+				float z = 1 / (inte_tmp1 + inte_tmp2 + inte_tmp3); // interpolated view space depth for attributes interpolation
+				// z interpolation
+				float bufferz = z * (p1.z * inte_tmp1 + p2.z * inte_tmp2 + p3.z * inte_tmp3); // depth in [N,F], for z-buffer storing
+				bufferz = frustum_f / (frustum_f - frustum_n) + frustum_f * frustum_n / (frustum_n - frustum_f) / bufferz; // interpolated z in [0,1]
 				// normal
 				vec3 normal;
 				normal.x = z * (n1.x * inte_tmp1 + n2.x * inte_tmp2 + n3.x * inte_tmp3);
@@ -284,7 +277,7 @@ void DrawTriangle2D(vec4 p1, vec4 p2, vec4 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t
 				//vec3 color = fragmentShader->shading_phong(normal, texCoords, worldPos);
 				//vec3 color = fragmentShader->shading_bump(normal, texCoords, worldPos);
 
-				raster2d->DrawPoint(vec2(x, y), zp, color);
+				raster2d->DrawPoint(vec2(x, y), bufferz, color);
 			}
 		}
 		u0 += a1;
@@ -329,8 +322,8 @@ vec4 DV_transform(vec4 pp) {
 	vec3 pNDC = vec3(pp.x * inverseClipW, pp.y * inverseClipW, pp.z * inverseClipW);
 
 	// viewport transform
-	//float z = (100 - 0.1) / 2 * pNDC.z + (100 + 0.1) / 2;
-	vec4 ps = vec4((pNDC.x + 1.0) / 2.0 * (t_backBufferWidth - 1), (pNDC.y + 1.0) / 2.0 * (t_backBufferHeight - 1), pNDC.z, inverseClipW);
+	float z = (frustum_f - frustum_n) / 2 * pNDC.z + (frustum_f + frustum_n) / 2; // depth range [N,F]
+	vec4 ps = vec4((pNDC.x + 1.0) / 2.0 * (t_backBufferWidth - 1), (pNDC.y + 1.0) / 2.0 * (t_backBufferHeight - 1), z, inverseClipW);
 
 	return ps;
 }

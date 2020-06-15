@@ -256,29 +256,28 @@ void DrawTriangle2D(vec4 p1, vec4 p2, vec4 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t
 				// zp *= Z;
 				// interpolation
 				// z interpolation
-				float z = 1 / ((1 - u - v) / p1.w + v / p2.w + u / p3.w);
-				/*float zp = (1 - u - v) * p1.z / p1.w + v * p2.z / p2.w + u * p3.z / p3.w;
-				zp = zp * z;*/
+				float inte_tmp1 = (1 - u - v) * p1.w;
+				float inte_tmp2 = v * p2.w;
+				float inte_tmp3 = u * p3.w;
+				float z = 1 / (inte_tmp1 + inte_tmp2 + inte_tmp3);
 				float zp = 1 / ((1 - u - v) / p1.z + v / p2.z + u / p3.z);
 
 
 				printf("%f %f\n", z, zp);
 				// normal
 				vec3 normal;
-				normal.x = z * (n1.x / p1.z * (1 - u - v) + n2.x / p2.z * v + n3.x / p3.z * u);
-				normal.y = z * (n1.y / p1.z * (1 - u - v) + n2.y / p2.z * v + n3.y / p3.z * u);
-				normal.z = z * (n1.z / p1.z * (1 - u - v) + n2.z / p2.z * v + n3.z / p3.z * u);
+				normal.x = z * (n1.x * inte_tmp1 + n2.x * inte_tmp2 + n3.x * inte_tmp3);
+				normal.y = z * (n1.y * inte_tmp1 + n2.y * inte_tmp2 + n3.y * inte_tmp3);
+				normal.z = z * (n1.z * inte_tmp1 + n2.z * inte_tmp2 + n3.z * inte_tmp3);
 				// texture coords
 				vec2 texCoords;
-				texCoords.x = z * ((1.0 - u - v) * t1.x / p1.w + v * t2.x / p2.w + u * t3.x / p3.w);
-				texCoords.y = z * ((1.0 - u - v) * t1.y / p1.w + v * t2.y / p2.w + u * t3.y / p3.w);
-				/*texCoords.x = (1.0 - u - v) * t1.x + v * t2.x + u * t3.x;
-				texCoords.y = (1.0 - u - v) * t1.y + v * t2.y + u * t3.y;*/
+				texCoords.x = z * (t1.x * inte_tmp1 + t2.x * inte_tmp2 + t3.x * inte_tmp3);
+				texCoords.y = z * (t1.y * inte_tmp1 + t2.y * inte_tmp2 + t3.y * inte_tmp3);
 				// world pos
 				vec3 worldPos;
-				worldPos.x = z * (pw1.x / p1.z * (1 - u - v) + pw2.x / p2.z * v + pw3.x / p3.z * u);
-				worldPos.y = z * (pw1.y / p1.z * (1 - u - v) + pw2.y / p2.z * v + pw3.y / p3.z * u);
-				worldPos.z = z * (pw1.z / p1.z * (1 - u - v) + pw2.z / p2.z * v + pw3.z / p3.z * u);
+				worldPos.x = z * (pw1.x * inte_tmp1 + pw2.x * inte_tmp2 + pw3.x * inte_tmp3);
+				worldPos.y = z * (pw1.y * inte_tmp1 + pw2.y * inte_tmp2 + pw3.y * inte_tmp3);
+				worldPos.z = z * (pw1.z * inte_tmp1 + pw2.z * inte_tmp2 + pw3.z * inte_tmp3);
 
 				// SHADING (in fragment shader)
 				vec3 color = fragmentShader->shading_texture(texCoords);
@@ -326,11 +325,12 @@ void DrawTriangle3D(vec3 p1, vec3 p2, vec3 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t
 // divide, viewport transform
 vec4 DV_transform(vec4 pp) {
 	// proj divide
-	vec3 pNDC = vec3(pp.x / pp.w, pp.y / pp.w, pp.z / pp.w);
+	float inverseClipW = 1.0f / pp.w;
+	vec3 pNDC = vec3(pp.x * inverseClipW, pp.y * inverseClipW, pp.z * inverseClipW);
 
 	// viewport transform
 	//float z = (100 - 0.1) / 2 * pNDC.z + (100 + 0.1) / 2;
-	vec4 ps = vec4((pNDC.x + 1.0) / 2.0 * (t_backBufferWidth - 1), (pNDC.y + 1.0) / 2.0 * (t_backBufferHeight - 1), pNDC.z, pp.w);
+	vec4 ps = vec4((pNDC.x + 1.0) / 2.0 * (t_backBufferWidth - 1), (pNDC.y + 1.0) / 2.0 * (t_backBufferHeight - 1), pNDC.z, inverseClipW);
 
 	return ps;
 }

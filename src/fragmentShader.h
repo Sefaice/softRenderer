@@ -8,8 +8,8 @@ public:
 	FragmentShader(Texture* _texture, vec3 _lightColor, vec3 _lightPos, vec3 _viewPos)
 		: texture(_texture), lightColor(_lightColor), lightPos(_lightPos), viewPos(_viewPos) {}
 	vec3 shading_texture(vec2 texCoords) {
-		//vec3 texColor = texture->sampleTex(texCoords);
-		vec3 texColor = texture->sampleTex_bilinear(texCoords);
+		vec3 texColor = texture->sampleTex(texCoords);
+		//vec3 texColor = texture->sampleTex_bilinear(texCoords);
 
 		return texColor;
 	}

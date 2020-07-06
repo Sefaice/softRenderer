@@ -276,7 +276,6 @@ int main() {
 	//vec3 v(1, 2, 3), n(4, 5, 6);
 	//cross(n, v).print();
 
-
 	//system("pause");
 
 	return 0;

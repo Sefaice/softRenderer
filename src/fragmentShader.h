@@ -8,31 +8,15 @@ public:
 	FragmentShader(Texture* _texture, vec3 _lightColor, vec3 _lightPos, vec3 _viewPos)
 		: texture(_texture), lightColor(_lightColor), lightPos(_lightPos), viewPos(_viewPos) {}
 	vec3 shading_texture(vec2 texCoords) {
-		vec3 texColor = texture->sampleTex(texCoords);
-		//vec3 texColor = texture->getColor(texCoords);
-
-		/*if (texCoords.x >= 0.1 && texCoords.x <= 1.0 && texCoords.y >= 0.1 && texCoords.y <= 1.0) {
-			return vec3(0, 0, 1);
-		}*/
-		/*if (texCoords.y >= 0.0 && texCoords.y <= 0.1) return vec3(0, 0, 0.1);
-		if (texCoords.y >= 0.1 && texCoords.y <= 0.2) return vec3(0, 0, 0.2);
-		if (texCoords.y >= 0.2 && texCoords.y <= 0.3) return vec3(0, 0, 0.3);
-		if (texCoords.y >= 0.3 && texCoords.y <= 0.4) return vec3(0, 0, 0.4);
-		if (texCoords.y >= 0.4 && texCoords.y <= 0.5) return vec3(0, 0, 0.5);
-		if (texCoords.y >= 0.5 && texCoords.y <= 0.6) return vec3(0, 0, 0.6);
-		if (texCoords.y >= 0.6 && texCoords.y <= 0.7) return vec3(0, 0, 0.7);
-		if (texCoords.y >= 0.7 && texCoords.y <= 0.8) return vec3(0, 0, 0.8);
-		if (texCoords.y >= 0.8 && texCoords.y <= 0.9) return vec3(0, 0, 0.9);
-		if (texCoords.y >= 0.9 && texCoords.y <= 1.0) return vec3(0, 0, 1);*/
-
+		//vec3 texColor = texture->sampleTex(texCoords);
+		vec3 texColor = texture->sampleTex_bilinear(texCoords);
 
 		return texColor;
-		//return vec3(texCoords.x, texCoords.y, 0);
 	}
 	vec3 shading_phong(vec3 normal, vec2 texCoords, vec3 worldPos) {
 		// sample in texture map
-		vec3 texColor = texture->sampleTex(texCoords);
-		//vec3 texColor = vec3(1.0, 0.5, 0.31);
+		//vec3 texColor = texture->sampleTex(texCoords);
+		vec3 texColor = vec3(1.0, 0.5, 0.31);
 
 		// ambient
 		float ambientStrength = 0.5;

@@ -171,7 +171,7 @@ inline mat4 operator*(const mat4& m1, const mat4& m2) {
 	mat4 r;
 	for (int i = 0; i < 4; i++) {
 		for (int j = 0; j < 4; j++) {
-			r.m[i][j] = m1.m[i][0] * m2.m[0][j] + m1.m[i][1] * m2.m[1][j] + m1.m[i][2] * m2.m[2][j] + m1.m[i][3] * m2.m[3][j];
+			r.m[j][i] = m1.m[0][i] * m2.m[j][0] + m1.m[1][i] * m2.m[j][1] + m1.m[2][i] * m2.m[j][2] + m1.m[3][i] * m2.m[j][3];
 		}
 	}
 
@@ -335,8 +335,6 @@ inline mat4 inverse(const mat4& m) {
 		printf("Inverse does not exist!\n");
 		return mat4();
 	}
-
-	// printf("determinant: %f\n", determinant);
 
 	return adjoint / determinant;
 }

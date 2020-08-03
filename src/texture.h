@@ -18,7 +18,7 @@ public:
 	vec3 sampleTex(vec2 texCoords) {
 		vec3 color;
 		if (texCoords.x >= 0 && texCoords.x <= 1 && texCoords.y >= 0 && texCoords.y <= 1) {
-			color = getColor(texCoords.x * texWidth, texCoords.y * texHeight);
+			color = getColor(texCoords.x * (texWidth - 1), texCoords.y * (texHeight - 1));
 		}
 
 		return color;
@@ -34,7 +34,6 @@ public:
 			vec3 c3 = getColor(floor(texCoordsX), floor(texCoordsY) + 1);
 			vec3 c4 = getColor(floor(texCoordsX) + 1, floor(texCoordsY) + 1);
 			
-
 			vec3 c12 = lerp(c1, c2, texCoordsX - floor(texCoordsX));
 			vec3 c34 = lerp(c3, c4, texCoordsX - floor(texCoordsX));
 			color = lerp(c12, c34, texCoordsY - floor(texCoordsY));

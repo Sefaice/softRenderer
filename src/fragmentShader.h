@@ -48,36 +48,45 @@ public:
 		return color;
 	}
 	vec3 shading_bump(vec3 normal, vec2 texCoords, vec3 worldPos) {
+		float kh = 3.2, kn = 1.6;
 
-		float kh = 0.2, kn = 0.1;
-
-		// TODO: Implement bump mapping here
-		// Let n = normal = (x, y, z)
-		// Vector t = (x*y/sqrt(x*x+z*z),sqrt(x*x+z*z),z*y/sqrt(x*x+z*z))
-		// Vector b = n cross product t
-		// Matrix TBN = [t b n]
-		// dU = kh * kn * (h(u+1/w,v)-h(u,v))
-		// dV = kh * kn * (h(u,v+1/h)-h(u,v))
-		// Vector ln = (-dU, -dV, 1)
-		// Normal n = normalize(TBN * ln)
-
-		float x2z2 = sqrt(normal.x * normal.x + normal.z * normal.z);
-		vec3 t = vec3(normal.x * normal.y / x2z2, x2z2, normal.z * normal.y / x2z2);
-		vec3 b = cross(normal, t);
-		mat3 TBN = mat3(t.x, t.y, t.z, b.x, b.y, b.z, normal.x, normal.y, normal.z);
-
+		// local normal
 		float dU = kh * kn * (h(texCoords.x + 1.0f / texture->texWidth, texCoords.y) - h(texCoords.x, texCoords.y));
 		float dV = kh * kn * (h(texCoords.x, texCoords.y + 1.0f / texture->texHeight) - h(texCoords.x, texCoords.y));
 		vec3 ln = vec3(-dU, -dV, 1);
+		ln = normalize(ln);
 
+		// TBN matrix, transform local normal to world space
+		float x2z2 = sqrt(normal.x * normal.x + normal.z * normal.z);
+		vec3 t = vec3(normal.x * normal.y / x2z2, -x2z2, normal.z * normal.y / x2z2);
+		vec3 b = cross(normal, t);
+		mat3 TBN = mat3(t.x, t.y, t.z, b.x, b.y, b.z, normal.x, normal.y, normal.z);
 		vec3 n = TBN * ln;
 		n = normalize(n);
 
-		normal.print();
-		n.print();
-		printf(".......................\n");
-
 		return n;
+	}
+	vec3 shading_displacement(vec3 normal, vec2 texCoords, vec3 worldPos) {
+		float kh = 3.2, kn = 1.6;
+
+		// local normal
+		float dU = kh * kn * (h(texCoords.x + 1.0f / texture->texWidth, texCoords.y) - h(texCoords.x, texCoords.y));
+		float dV = kh * kn * (h(texCoords.x, texCoords.y + 1.0f / texture->texHeight) - h(texCoords.x, texCoords.y));
+		vec3 ln = vec3(-dU, -dV, 1);
+		ln = normalize(ln);
+
+		// TBN matrix, transform local normal to world space
+		float x2z2 = sqrt(normal.x * normal.x + normal.z * normal.z);
+		vec3 t = vec3(normal.x * normal.y / x2z2, -x2z2, normal.z * normal.y / x2z2);
+		vec3 b = cross(normal, t);
+		mat3 TBN = mat3(t.x, t.y, t.z, b.x, b.y, b.z, normal.x, normal.y, normal.z);
+		vec3 n = TBN * ln;
+		n = normalize(n);
+
+		// displaced position
+		vec3 worldPos_dis = worldPos + kn * n * h(texCoords.x, texCoords.y);
+
+		return worldPos_dis;
 	}
 
 private:
@@ -86,7 +95,7 @@ private:
 	vec3 lightPos;
 	vec3 viewPos;
 
-	float h(int u, int v) { // GAMES101 这么计算没有意义，为随机选择的得到灰度图的方法
+	float h(float u, float v) { // GAMES101这么计算，没有意义，只是一个随机选择的得到灰度图的方法
 		vec3 texColor = texture->sampleTex(vec2(u, v));
 		return sqrt(texColor.x * texColor.x + texColor.y * texColor.y + texColor.z * texColor.z);
 	}

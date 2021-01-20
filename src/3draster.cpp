@@ -1,4 +1,5 @@
 #include "3draster.h"
+#include "./subdivision/halfedge.h"
 
 #include "OBJ_Loader.h"
 
@@ -28,10 +29,16 @@ float frustum_n = .1f;
 float frustum_f = 100.0f;
 
 // light
-vec3 lightPos(1.0f, 1.0f, 2.0f);
+vec3 lightPos(.0f, 3.0f, 3.0f);
 vec3 lightColor(1.0f, 1.0f, 1.0f);
-vec3 viewPos(0, 0, 9);
+vec3 viewPos(0, 0, 15);
 mat4 model_tmp; // use model for lighting temporarily
+
+// subdivision
+HalfEdge global_h;
+std::vector<std::pair<vec3, vec3>> verticesVector;
+std::vector<vec3> verticesVector_quad;
+unsigned int subdivision_num = 1;
 
 void InitRenderer(uint32_t* backBuffer, float* zbuffer, int backBufferWidth, int backBufferHeight) {
 
@@ -41,32 +48,70 @@ void InitRenderer(uint32_t* backBuffer, float* zbuffer, int backBufferWidth, int
 	t_backBufferHeight = backBufferHeight;
 	raster2d = new Raster2d(backBuffer, zbuffer, backBufferWidth, backBufferHeight);
 
-	// load texture
-	texture = new Texture("../../src/res/hmap.jpg");
+	//// load texture
+	//texture = new Texture("../../src/res/hmap.jpg");
 
-	// load objects
-	objl::Loader loader;
-	bool load = loader.LoadFile("../../src/res/models/spot_triangulated.obj");
-	if (!load) {
-		std::cout << "Load obj file failed" << std::endl;
-	}
-	else {
-		std::cout << "Load obj file succeed" << std::endl;
+	//// load objects
+	//objl::Loader loader;
+	//bool load = loader.LoadFile("../../src/res/models/spot_triangulated.obj");
+	//if (!load) {
+	//	std::cout << "Load obj file failed" << std::endl;
+	//}
+	//else {
+	//	std::cout << "Load obj file succeed" << std::endl;
 
-		for (auto mesh : loader.LoadedMeshes)
-		{
-			for (int i = 0; i < mesh.Vertices.size(); i += 3)
-			{
-				Triangle* t = new Triangle();
-				for (int j = 0; j < 3; j++) // a triangle each time
-				{
-					t->pos[j] = vec3(mesh.Vertices[i + j].Position.X, mesh.Vertices[i + j].Position.Y, mesh.Vertices[i + j].Position.Z);
-					t->texCoords[j] = vec2(mesh.Vertices[i + j].TextureCoordinate.X, mesh.Vertices[i + j].TextureCoordinate.Y);
-					t->normal[j] = vec3(mesh.Vertices[i + j].Normal.X, mesh.Vertices[i + j].Normal.Y, mesh.Vertices[i + j].Normal.Z);
-					}
-				modelTriangles.push_back(t);
-			}
-		}
+	//	for (auto mesh : loader.LoadedMeshes)
+	//	{
+	//		for (int i = 0; i < mesh.Vertices.size(); i += 3)
+	//		{
+	//			Triangle* t = new Triangle();
+	//			for (int j = 0; j < 3; j++) // a triangle each time
+	//			{
+	//				t->pos[j] = vec3(mesh.Vertices[i + j].Position.X, mesh.Vertices[i + j].Position.Y, mesh.Vertices[i + j].Position.Z);
+	//				t->texCoords[j] = vec2(mesh.Vertices[i + j].TextureCoordinate.X, mesh.Vertices[i + j].TextureCoordinate.Y);
+	//				t->normal[j] = vec3(mesh.Vertices[i + j].Normal.X, mesh.Vertices[i + j].Normal.Y, mesh.Vertices[i + j].Normal.Z);
+	//				}
+	//			modelTriangles.push_back(t);
+	//		}
+	//	}
+	//}
+
+	// init subdivision cube
+	float vertices[] = {
+		-2.0f, -2.0f, -2.0f, // back
+		-2.0f, 2.0f, -2.0f,
+		2.0f, 2.0f, -2.0f,
+		2.0f, -2.0f, -2.0f,
+		2.0f, 2.0f, 2.0f, // top
+		2.0f, 2.0f, -2.0f,
+		-2.0f, 2.0f, -2.0f,
+		-2.0f, 2.0f, 2.0f,
+		-2.0f, -2.0f, 2.0f, // left
+		-2.0f, 2.0f, 2.0f,
+		-2.0f, 2.0f, -2.0f,
+		-2.0f, -2.0f, -2.0f,
+		2.0f, -2.0f, -2.0f, // right
+		2.0f, 2.0f, -2.0f,
+		2.0f, 2.0f, 2.0f,
+		2.0f, -2.0f, 2.0f,
+		2.0f, -2.0f, 2.0f, // front
+		2.0f, 2.0f, 2.0f,
+		-2.0f, 2.0f, 2.0f,
+		-2.0f, -2.0f, 2.0f,
+		2.0f, -2.0f, -2.0f, // bottom
+		2.0f, -2.0f, 2.0f,
+		-2.0f, -2.0f, 2.0f,
+		-2.0f, -2.0f, -2.0f
+	};
+	unsigned int numVertices = sizeof(vertices) / sizeof(float); // 24
+	global_h.from_mesh_float(vertices, numVertices);
+	global_h.to_mesh(verticesVector, verticesVector_quad);
+
+	// subdivide
+	for (unsigned int i = 0; i < subdivision_num; i++) {
+		global_h.from_mesh(verticesVector_quad);
+		global_h.subdivide();
+		global_h.to_mesh(verticesVector, verticesVector_quad);
 	}
 }
 
@@ -89,9 +134,9 @@ void UpdateBackBuffer(double dt) {
 	//model = translate(model, vec3(3.0f * float(sin(t_dtime)),0.0, 0.0));
 	//model = translate(model, vec3(.0, 0.0, 0.0));
 	//model = rotate(model, radians(30.0), vec3(1, 1, 0));
-	model = rotate(model, t_dtime / 5.0, vec3(1, 1, 0));
+	model = rotate(model, t_dtime / 4.0, vec3(1, 1, 1));
 	//model = rotate(model, sin(t_dtime), vec3(-1, 0, 0));
-	//model = scale(model, 2.0f);
+	//model = scale(model, .5f);
 	// view
 	vec3 cameraPos = viewPos;
 	vec3 cameraRight = vec3(1, 0, 0);
@@ -136,35 +181,8 @@ void UpdateBackBuffer(double dt) {
 	//DrawTriangle(vec3(100, 100, 0), vec3(300, 500, 0), vec3(500, 100, 0), vec3(0, 1, 0));
 	
 	// draw cube
-	DrawTriangle3D(vec3(-1.0, 1.0, 1.0), vec3(1.0, -1.0, 1.0), vec3(-1.0, -1.0, 1.0), 
-		vec3(0, 0, 1), vec3(0, 0, 1), vec3(0, 0, 1), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // front
-	DrawTriangle3D(vec3(-1.0, 1.0, 1.0), vec3(1.0, 1.0, 1.0), vec3(1.0, -1.0, 1.0), 
-		vec3(0, 0, 1), vec3(0, 0, 1), vec3(0, 0, 1), vec2(0, 1), vec2(1, 1), vec2(1, 0));
-	
-	DrawTriangle3D(vec3(1.0, 1.0, 1.0), vec3(1.0, -1.0, -1.0), vec3(1.0, -1.0, 1.0), 
-		vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // right
-	DrawTriangle3D(vec3(1.0, 1.0, 1.0), vec3(1.0, 1.0, -1.0), vec3(1.0, -1.0, -1.0), 
-		vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
-	
-	DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(1.0, 1.0, 1.0), vec3(-1.0, 1.0, 1.0), 
-		vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // top
-	DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(1.0, 1.0, -1.0), vec3(1.0, 1.0, 1.0), 
-		vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
-	
-	DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(-1.0, -1.0, 1.0), vec3(-1.0, -1.0, -1.0), 
-		vec3(-1.0, 0, 0), vec3(-1.0, 0, 0), vec3(-1.0, 0, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // left
-	DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(-1.0, 1.0, 1.0), vec3(-1.0, -1.0, 1.0), 
-		vec3(-1.0, 0, 0), vec3(-1.0, 0, 0), vec3(-1.0, 0, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
 
-	DrawTriangle3D(vec3(1.0, 1.0, -1.0), vec3(-1.0, -1.0, -1.0), vec3(1.0, -1.0, -1.0), 
-		vec3(0, 0, -1), vec3(0, 0, -1), vec3(0, 0, -1), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // back
-	DrawTriangle3D(vec3(1.0, 1.0, -1.0), vec3(-1.0, 1.0, -1.0), vec3(-1.0, -1.0, -1.0), 
-		vec3(0, 0, -1), vec3(0, 0, -1), vec3(0, 0, -1), vec2(0, 1), vec2(1, 1), vec2(1, 0));
-	
-	DrawTriangle3D(vec3(-1.0, -1.0, 1.0), vec3(1.0, -1.0, -1.0), vec3(-1.0, -1.0, -1.0), 
-		vec3(0, -1, 0), vec3(0, -1, 0), vec3(0, -1, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // bottom
-	DrawTriangle3D(vec3(-1.0, -1.0, 1.0), vec3(1.0, -1.0, 1.0), vec3(1.0, -1.0, -1.0), 
-		vec3(0, -1, 0), vec3(0, -1, 0), vec3(0, -1, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
+	DrawCube(verticesVector);
 
 	// test z
 	/*DrawTriangle3D(vec3(-5, 3, 0), vec3(0, 0, 0), vec3(-5, 0, 0.0),
@@ -273,8 +291,8 @@ void DrawTriangle2D(vec4 p1, vec4 p2, vec4 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t
 
 				// SHADING (in fragment shader)
 				//vec3 color = fragmentShader->shading_texture(texCoords);
-				//vec3 color = fragmentShader->shading_phong(normal, texCoords, worldPos);
-				vec3 color = fragmentShader->shading_bump(normal, texCoords, worldPos);
+				vec3 color = fragmentShader->shading_phong(normal, texCoords, worldPos);
+				//vec3 color = fragmentShader->shading_bump(normal, texCoords, worldPos);
 				//vec3 color = fragmentShader->shading_displacement(normal, texCoords, worldPos);
 
 				raster2d->DrawPoint(vec2(x, y), bufferz, color);
@@ -284,6 +302,47 @@ void DrawTriangle2D(vec4 p1, vec4 p2, vec4 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t
 		v0 += b1;
 	}
 #endif
+}
+
+/* draw cube from position&normal vector
+*/
+void DrawCube(std::vector<std::pair<vec3, vec3>> verticesVector) {
+
+	for (unsigned int i = 0; i < verticesVector.size(); i += 3) {
+		DrawTriangle3D(verticesVector[i].first, verticesVector[i + 1].first, verticesVector[i + 2].first,
+			verticesVector[i].second, verticesVector[i + 1].second, verticesVector[i + 2].second,
+			vec2(0, 0), vec2(0, 0), vec2(0, 0));
+	}
+
+	//DrawTriangle3D(vec3(-1.0, 1.0, 1.0), vec3(1.0, -1.0, 1.0), vec3(-1.0, -1.0, 1.0),
+	//	vec3(0, 0, 1), vec3(0, 0, 1), vec3(0, 0, 1), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // front
+	//DrawTriangle3D(vec3(-1.0, 1.0, 1.0), vec3(1.0, 1.0, 1.0), vec3(1.0, -1.0, 1.0),
+	//	vec3(0, 0, 1), vec3(0, 0, 1), vec3(0, 0, 1), vec2(0, 1), vec2(1, 1), vec2(1, 0));
+
+	//DrawTriangle3D(vec3(1.0, 1.0, 1.0), vec3(1.0, -1.0, -1.0), vec3(1.0, -1.0, 1.0),
+	//	vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // right
+	//DrawTriangle3D(vec3(1.0, 1.0, 1.0), vec3(1.0, 1.0, -1.0), vec3(1.0, -1.0, -1.0),
+	//	vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
+
+	//DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(1.0, 1.0, 1.0), vec3(-1.0, 1.0, 1.0),
+	//	vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // top
+	//DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(1.0, 1.0, -1.0), vec3(1.0, 1.0, 1.0),
+	//	vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
+
+	//DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(-1.0, -1.0, 1.0), vec3(-1.0, -1.0, -1.0),
+	//	vec3(-1.0, 0, 0), vec3(-1.0, 0, 0), vec3(-1.0, 0, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // left
+	//DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(-1.0, 1.0, 1.0), vec3(-1.0, -1.0, 1.0),
+	//	vec3(-1.0, 0, 0), vec3(-1.0, 0, 0), vec3(-1.0, 0, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
+
+	//DrawTriangle3D(vec3(1.0, 1.0, -1.0), vec3(-1.0, -1.0, -1.0), vec3(1.0, -1.0, -1.0),
+	//	vec3(0, 0, -1), vec3(0, 0, -1), vec3(0, 0, -1), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // back
+	//DrawTriangle3D(vec3(1.0, 1.0, -1.0), vec3(-1.0, 1.0, -1.0), vec3(-1.0, -1.0, -1.0),
+	//	vec3(0, 0, -1), vec3(0, 0, -1), vec3(0, 0, -1), vec2(0, 1), vec2(1, 1), vec2(1, 0));
+
+	//DrawTriangle3D(vec3(-1.0, -1.0, 1.0), vec3(1.0, -1.0, -1.0), vec3(-1.0, -1.0, -1.0),
+	//	vec3(0, -1, 0), vec3(0, -1, 0), vec3(0, -1, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // bottom
+	//DrawTriangle3D(vec3(-1.0, -1.0, 1.0), vec3(1.0, -1.0, 1.0), vec3(1.0, -1.0, -1.0),
+	//	vec3(0, -1, 0), vec3(0, -1, 0), vec3(0, -1, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
 }
 
 void DrawTriangle3D(vec3 p1, vec3 p2, vec3 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t1, vec2 t2, vec2 t3) {

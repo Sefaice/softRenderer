@@ -18,6 +18,7 @@ softRenderer
   * naive texture mapping
   * (Blinn-)Phong lighting model
 * SSAA
+* catmull-clark subdivision
 
 TODOS:
 * back face culling(改顶点顺序为counter-clockwise?（会影响到2d raster）)

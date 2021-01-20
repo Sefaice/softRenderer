@@ -23,6 +23,7 @@
     <ClCompile Include="..\..\src\clip.cpp" />
     <ClCompile Include="..\..\src\main.cpp" />
     <ClCompile Include="..\..\src\3draster.cpp" />
+    <ClCompile Include="..\..\src\subdivision\halfedge.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\2draster.h" />
@@ -32,6 +33,7 @@
     <ClInclude Include="..\..\src\3draster.h" />
     <ClInclude Include="..\..\src\OBJ_Loader.h" />
     <ClInclude Include="..\..\src\stb_image.h" />
+    <ClInclude Include="..\..\src\subdivision\halfedge.h" />
     <ClInclude Include="..\..\src\texture.h" />
     <ClInclude Include="..\..\src\vertexShader.h" />
   </ItemGroup>

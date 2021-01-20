@@ -16,10 +16,10 @@ public:
 	vec3 shading_phong(vec3 normal, vec2 texCoords, vec3 worldPos) {
 		// sample in texture map
 		//vec3 texColor = texture->sampleTex(texCoords);
-		vec3 texColor = vec3(1.0, 0.5, 0.31);
+		vec3 texColor = vec3(0.5f, 0.6f, 0.7f);
 
 		// ambient
-		float ambientStrength = 0.5;
+		float ambientStrength = 0.2;
 		vec3 ambient = lightColor * ambientStrength;
 
 		// diffuse
@@ -40,7 +40,7 @@ public:
 		// blinn-phong
 		vec3 halfwayDir = lightDir + viewDir;
 		halfwayDir = normalize(halfwayDir);
-		float spec = pow(maxInTwo(dot(norm, halfwayDir), 0.0), 64);
+		float spec = pow(maxInTwo(dot(norm, halfwayDir), 0.0), 32);
 		vec3 specular = lightColor * specularStrength * spec;
 
 		vec3 color = (ambient + diffuse + specular) * texColor;

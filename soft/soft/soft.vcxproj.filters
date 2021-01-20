@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="源文件\subdivision">
+      <UniqueIdentifier>{73bcf68e-819e-47a1-af27-774e2b5d73e7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\main.cpp">
@@ -26,6 +29,9 @@
     </ClCompile>
     <ClCompile Include="..\..\src\3draster.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\subdivision\halfedge.cpp">
+      <Filter>源文件\subdivision</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -55,6 +61,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\texture.h">
       <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\subdivision\halfedge.h">
+      <Filter>源文件\subdivision</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

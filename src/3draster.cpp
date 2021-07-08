@@ -28,17 +28,26 @@ Texture* texture;
 float frustum_n = .1f;
 float frustum_f = 100.0f;
 
+// camera
+vec3 viewPos(0, 0, 15);
+vec3 cameraPos = viewPos;
+vec3 cameraRight = vec3(1, 0, 0);
+vec3 cameraUp = vec3(0, 1, 0);
+vec3 cameraBackword = vec3(0, 0, 1);
+
+// transform matrix
+mat4 rotation = mat4(1.0f);
+
 // light
 vec3 lightPos(.0f, 3.0f, 3.0f);
 vec3 lightColor(1.0f, 1.0f, 1.0f);
-vec3 viewPos(0, 0, 15);
 mat4 model_tmp; // use model for lighting temporarily
 
-// subdivision
-HalfEdge global_h;
-std::vector<std::pair<vec3, vec3>> verticesVector;
-std::vector<vec3> verticesVector_quad;
-unsigned int subdivision_num = 1;
+//// subdivision
+//HalfEdge global_h;
+//std::vector<std::pair<vec3, vec3>> verticesVector;
+//std::vector<vec3> verticesVector_quad;
+//unsigned int subdivision_num = 3;
 
 void InitRenderer(uint32_t* backBuffer, float* zbuffer, int backBufferWidth, int backBufferHeight) {
 
@@ -48,8 +57,8 @@ void InitRenderer(uint32_t* backBuffer, float* zbuffer, int backBufferWidth, int
 	t_backBufferHeight = backBufferHeight;
 	raster2d = new Raster2d(backBuffer, zbuffer, backBufferWidth, backBufferHeight);
 
-	//// load texture
-	//texture = new Texture("../../src/res/hmap.jpg");
+	// load texture
+	texture = new Texture("../../src/res/board.jpg");
 
 	//// load objects
 	//objl::Loader loader;
@@ -70,52 +79,51 @@ void InitRenderer(uint32_t* backBuffer, float* zbuffer, int backBufferWidth, int
 	//				t->pos[j] = vec3(mesh.Vertices[i + j].Position.X, mesh.Vertices[i + j].Position.Y, mesh.Vertices[i + j].Position.Z);
 	//				t->texCoords[j] = vec2(mesh.Vertices[i + j].TextureCoordinate.X, mesh.Vertices[i + j].TextureCoordinate.Y);
 	//				t->normal[j] = vec3(mesh.Vertices[i + j].Normal.X, mesh.Vertices[i + j].Normal.Y, mesh.Vertices[i + j].Normal.Z);
-	//				}
+	//			}
 	//			modelTriangles.push_back(t);
 	//		}
 	//	}
 	//}
 
-	// init subdivision cube
-	float vertices[] = {
-		-2.0f, -2.0f, -2.0f, // back
-		-2.0f, 2.0f, -2.0f,
-		2.0f, 2.0f, -2.0f,
-		2.0f, -2.0f, -2.0f,
-		2.0f, 2.0f, 2.0f, // top
-		2.0f, 2.0f, -2.0f,
-		-2.0f, 2.0f, -2.0f,
-		-2.0f, 2.0f, 2.0f,
-		-2.0f, -2.0f, 2.0f, // left
-		-2.0f, 2.0f, 2.0f,
-		-2.0f, 2.0f, -2.0f,
-		-2.0f, -2.0f, -2.0f,
-		2.0f, -2.0f, -2.0f, // right
-		2.0f, 2.0f, -2.0f,
-		2.0f, 2.0f, 2.0f,
-		2.0f, -2.0f, 2.0f,
-		2.0f, -2.0f, 2.0f, // front
-		2.0f, 2.0f, 2.0f,
-		-2.0f, 2.0f, 2.0f,
-		-2.0f, -2.0f, 2.0f,
-		2.0f, -2.0f, -2.0f, // bottom
-		2.0f, -2.0f, 2.0f,
-		-2.0f, -2.0f, 2.0f,
-		-2.0f, -2.0f, -2.0f
-	};
-	unsigned int numVertices = sizeof(vertices) / sizeof(float); // 24
-	global_h.from_mesh_float(vertices, numVertices);
-	global_h.to_mesh(verticesVector, verticesVector_quad);
-
-	// subdivide
-	for (unsigned int i = 0; i < subdivision_num; i++) {
-		global_h.from_mesh(verticesVector_quad);
-		global_h.subdivide();
-		global_h.to_mesh(verticesVector, verticesVector_quad);
-	}
+	//// init subdivision cube
+	//float vertices[] = {
+	//	-2.0f, -2.0f, -2.0f, // back
+	//	-2.0f, 2.0f, -2.0f,
+	//	2.0f, 2.0f, -2.0f,
+	//	2.0f, -2.0f, -2.0f,
+	//	2.0f, 2.0f, 2.0f, // top
+	//	2.0f, 2.0f, -2.0f,
+	//	-2.0f, 2.0f, -2.0f,
+	//	-2.0f, 2.0f, 2.0f,
+	//	-2.0f, -2.0f, 2.0f, // left
+	//	-2.0f, 2.0f, 2.0f,
+	//	-2.0f, 2.0f, -2.0f,
+	//	-2.0f, -2.0f, -2.0f,
+	//	2.0f, -2.0f, -2.0f, // right
+	//	2.0f, 2.0f, -2.0f,
+	//	2.0f, 2.0f, 2.0f,
+	//	2.0f, -2.0f, 2.0f,
+	//	2.0f, -2.0f, 2.0f, // front
+	//	2.0f, 2.0f, 2.0f,
+	//	-2.0f, 2.0f, 2.0f,
+	//	-2.0f, -2.0f, 2.0f,
+	//	2.0f, -2.0f, -2.0f, // bottom
+	//	2.0f, -2.0f, 2.0f,
+	//	-2.0f, -2.0f, 2.0f,
+	//	-2.0f, -2.0f, -2.0f
+	//};
+	//unsigned int numVertices = sizeof(vertices) / sizeof(float); // 24
+	//global_h.from_mesh_float(vertices, numVertices);
+	//global_h.to_mesh(verticesVector, verticesVector_quad);
+	//// subdivide
+	//for (unsigned int i = 0; i < subdivision_num; i++) {
+	//	global_h.from_mesh(verticesVector_quad);
+	//	global_h.subdivide();
+	//	global_h.to_mesh(verticesVector, verticesVector_quad);
+	//}
 }
 
-void UpdateBackBuffer(double dt) {
+void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, float scrollOff) {
 	t_dtime = dt;
 
 	// clear backbuffer
@@ -131,17 +139,20 @@ void UpdateBackBuffer(double dt) {
 	// init mats and shaders
 	// model
 	mat4 model = mat4(1.0);
-	//model = translate(model, vec3(3.0f * float(sin(t_dtime)),0.0, 0.0));
+	//model = translate(model, vec3(6.0f * float(sin(t_dtime / 5.0f)), 0.0, 0.0));
 	//model = translate(model, vec3(.0, 0.0, 0.0));
 	//model = rotate(model, radians(30.0), vec3(1, 1, 0));
-	model = rotate(model, t_dtime / 4.0, vec3(1, 1, 1));
+	//model = rotate(model, t_dtime / 4.0, vec3(1, 1, 1));
 	//model = rotate(model, sin(t_dtime), vec3(-1, 0, 0));
-	//model = scale(model, .5f);
+	// focus camera
+	if (cursorDown) {
+		vec3 rotateAxis = cross(vec3(curOffx, curOffy, 0), -cameraBackword);
+		rotation = getRotate(sqrt(curOffx * curOffx + curOffy * curOffy) / 300.0f, rotateAxis) * rotation;
+	}
+	model = rotation * model;
+	model = scale(model, 2.0f + scrollOff / 10.0f);
 	// view
-	vec3 cameraPos = viewPos;
-	vec3 cameraRight = vec3(1, 0, 0);
-	vec3 cameraUp = vec3(0, 1, 0);
-	vec3 cameraBackword = vec3(0, 0, 1);
+	
 	mat4 view1 = mat4(cameraRight.x, cameraUp.x, cameraBackword.x, 0,
 		cameraRight.y, cameraUp.y, cameraBackword.y, 0,
 		cameraRight.z, cameraUp.z, cameraBackword.z, 0,
@@ -168,21 +179,22 @@ void UpdateBackBuffer(double dt) {
 	fragmentShader = new FragmentShader(texture, lightColor, lightPos, viewPos);
 
 	//// draw point
-	//DrawPoint(vec2(500, 100), 0, vec3(0, 0, 1));
+	//raster2d->DrawPoint(vec2(500, 100), bufferz, vec3(0, 0, 1));
 	//// draw line by Bresenham Algorithm
-	//if (!initBresenham) {
+	///*if (!initBresenham) {
 	//	InitLine(100, 100, 800, 700);
 	//	initBresenham = true;
 	//}
 	//DrawLine(backBuffer, backBufferWidth, backBufferHeight);
+	//raster2d->DrawLine(200, 100, 800, 700);
+	/*for (int i = 200; i < 800; i++) {
+		raster2d->DrawPoint(vec2(i, i-100), 0, vec3(0, 0, 1));
+	}*/
 	//// draw line by wu's algorithm
-	//DrawLineWu(100, 700, 600, 100, backBuffer, backBufferWidth, backBufferHeight);
-	//// draw a 2D triangle
-	//DrawTriangle(vec3(100, 100, 0), vec3(300, 500, 0), vec3(500, 100, 0), vec3(0, 1, 0));
+	//raster2d->DrawLineWu(100, 100, 800, 700);
 	
 	// draw cube
-
-	DrawCube(verticesVector);
+	DrawCube();
 
 	// test z
 	/*DrawTriangle3D(vec3(-5, 3, 0), vec3(0, 0, 0), vec3(-5, 0, 0.0),
@@ -205,14 +217,13 @@ void UpdateBackBuffer(double dt) {
 void DrawTriangle2D(vec4 p1, vec4 p2, vec4 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t1, vec2 t2, vec2 t3,
 	vec3 pw1, vec3 pw2, vec3 pw3) {
 #if POLYGON_MODE // draw frame in polygon mode
-	/*raster2d->DrawLine(p1.x, p1.y, p2.x, p2.y);
+	raster2d->DrawLine(p1.x, p1.y, p2.x, p2.y);
 	raster2d->DrawLine(p2.x, p2.y, p3.x, p3.y);
-	raster2d->DrawLine(p3.x, p3.y, p1.x, p1.y);*/
-	raster2d->DrawLineWu(p1.x, p1.y, p2.x, p2.y);
+	raster2d->DrawLine(p3.x, p3.y, p1.x, p1.y);
+	/*raster2d->DrawLineWu(p1.x, p1.y, p2.x, p2.y);
 	raster2d->DrawLineWu(p2.x, p2.y, p3.x, p3.y);
-	raster2d->DrawLineWu(p3.x, p3.y, p1.x, p1.y);
+	raster2d->DrawLineWu(p3.x, p3.y, p1.x, p1.y);*/
 #else
-
 	int maxx = maxInThree(p1.x, p2.x, p3.x), minx = minInThree(p1.x, p2.x, p3.x),
 		maxy = maxInThree(p1.y, p2.y, p3.y), miny = minInThree(p1.y, p2.y, p3.y);
 
@@ -236,9 +247,9 @@ void DrawTriangle2D(vec4 p1, vec4 p2, vec4 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t
 	float o_x23 = p3.x - p2.x, o_y23 = p3.y - p2.y;
 	float o_x31 = p1.x - p3.x, o_y31 = p1.y - p3.y;
 
-	for (int x = minx; x < maxx; x++) {
+	for (int x = minx; x <= maxx; x++) {
 		float duy = 0, dvy = 0;
-		for (int y = miny; y < maxy; y++) {
+		for (int y = miny; y <= maxy; y++) {
 			// params: u - 3, v - 2, (1-u-v) - 1
 			float u = u0 + duy;
 			float v = v0 + dvy;
@@ -306,43 +317,44 @@ void DrawTriangle2D(vec4 p1, vec4 p2, vec4 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t
 
 /* draw cube from position&normal vector
 */
-void DrawCube(std::vector<std::pair<vec3, vec3>> verticesVector) {
+void DrawCube() {
+//void DrawCube(std::vector<std::pair<vec3, vec3>> verticesVector) {
 
-	for (unsigned int i = 0; i < verticesVector.size(); i += 3) {
+	/*for (unsigned int i = 0; i < verticesVector.size(); i += 3) {
 		DrawTriangle3D(verticesVector[i].first, verticesVector[i + 1].first, verticesVector[i + 2].first,
 			verticesVector[i].second, verticesVector[i + 1].second, verticesVector[i + 2].second,
 			vec2(0, 0), vec2(0, 0), vec2(0, 0));
-	}
+	}*/
 
-	//DrawTriangle3D(vec3(-1.0, 1.0, 1.0), vec3(1.0, -1.0, 1.0), vec3(-1.0, -1.0, 1.0),
-	//	vec3(0, 0, 1), vec3(0, 0, 1), vec3(0, 0, 1), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // front
-	//DrawTriangle3D(vec3(-1.0, 1.0, 1.0), vec3(1.0, 1.0, 1.0), vec3(1.0, -1.0, 1.0),
-	//	vec3(0, 0, 1), vec3(0, 0, 1), vec3(0, 0, 1), vec2(0, 1), vec2(1, 1), vec2(1, 0));
+	DrawTriangle3D(vec3(-1.0, 1.0, 1.0), vec3(1.0, -1.0, 1.0), vec3(-1.0, -1.0, 1.0),
+		vec3(0, 0, 1), vec3(0, 0, 1), vec3(0, 0, 1), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // front
+	DrawTriangle3D(vec3(-1.0, 1.0, 1.0), vec3(1.0, 1.0, 1.0), vec3(1.0, -1.0, 1.0),
+		vec3(0, 0, 1), vec3(0, 0, 1), vec3(0, 0, 1), vec2(0, 1), vec2(1, 1), vec2(1, 0));
 
-	//DrawTriangle3D(vec3(1.0, 1.0, 1.0), vec3(1.0, -1.0, -1.0), vec3(1.0, -1.0, 1.0),
-	//	vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // right
-	//DrawTriangle3D(vec3(1.0, 1.0, 1.0), vec3(1.0, 1.0, -1.0), vec3(1.0, -1.0, -1.0),
-	//	vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
+	DrawTriangle3D(vec3(1.0, 1.0, 1.0), vec3(1.0, -1.0, -1.0), vec3(1.0, -1.0, 1.0),
+		vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // right
+	DrawTriangle3D(vec3(1.0, 1.0, 1.0), vec3(1.0, 1.0, -1.0), vec3(1.0, -1.0, -1.0),
+		vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
 
-	//DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(1.0, 1.0, 1.0), vec3(-1.0, 1.0, 1.0),
-	//	vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // top
-	//DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(1.0, 1.0, -1.0), vec3(1.0, 1.0, 1.0),
-	//	vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
+	DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(1.0, 1.0, 1.0), vec3(-1.0, 1.0, 1.0),
+		vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // top
+	DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(1.0, 1.0, -1.0), vec3(1.0, 1.0, 1.0),
+		vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
 
-	//DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(-1.0, -1.0, 1.0), vec3(-1.0, -1.0, -1.0),
-	//	vec3(-1.0, 0, 0), vec3(-1.0, 0, 0), vec3(-1.0, 0, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // left
-	//DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(-1.0, 1.0, 1.0), vec3(-1.0, -1.0, 1.0),
-	//	vec3(-1.0, 0, 0), vec3(-1.0, 0, 0), vec3(-1.0, 0, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
+	DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(-1.0, -1.0, 1.0), vec3(-1.0, -1.0, -1.0),
+		vec3(-1.0, 0, 0), vec3(-1.0, 0, 0), vec3(-1.0, 0, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // left
+	DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(-1.0, 1.0, 1.0), vec3(-1.0, -1.0, 1.0),
+		vec3(-1.0, 0, 0), vec3(-1.0, 0, 0), vec3(-1.0, 0, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
 
-	//DrawTriangle3D(vec3(1.0, 1.0, -1.0), vec3(-1.0, -1.0, -1.0), vec3(1.0, -1.0, -1.0),
-	//	vec3(0, 0, -1), vec3(0, 0, -1), vec3(0, 0, -1), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // back
-	//DrawTriangle3D(vec3(1.0, 1.0, -1.0), vec3(-1.0, 1.0, -1.0), vec3(-1.0, -1.0, -1.0),
-	//	vec3(0, 0, -1), vec3(0, 0, -1), vec3(0, 0, -1), vec2(0, 1), vec2(1, 1), vec2(1, 0));
+	DrawTriangle3D(vec3(1.0, 1.0, -1.0), vec3(-1.0, -1.0, -1.0), vec3(1.0, -1.0, -1.0),
+		vec3(0, 0, -1), vec3(0, 0, -1), vec3(0, 0, -1), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // back
+	DrawTriangle3D(vec3(1.0, 1.0, -1.0), vec3(-1.0, 1.0, -1.0), vec3(-1.0, -1.0, -1.0),
+		vec3(0, 0, -1), vec3(0, 0, -1), vec3(0, 0, -1), vec2(0, 1), vec2(1, 1), vec2(1, 0));
 
-	//DrawTriangle3D(vec3(-1.0, -1.0, 1.0), vec3(1.0, -1.0, -1.0), vec3(-1.0, -1.0, -1.0),
-	//	vec3(0, -1, 0), vec3(0, -1, 0), vec3(0, -1, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // bottom
-	//DrawTriangle3D(vec3(-1.0, -1.0, 1.0), vec3(1.0, -1.0, 1.0), vec3(1.0, -1.0, -1.0),
-	//	vec3(0, -1, 0), vec3(0, -1, 0), vec3(0, -1, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
+	DrawTriangle3D(vec3(-1.0, -1.0, 1.0), vec3(1.0, -1.0, -1.0), vec3(-1.0, -1.0, -1.0),
+		vec3(0, -1, 0), vec3(0, -1, 0), vec3(0, -1, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // bottom
+	DrawTriangle3D(vec3(-1.0, -1.0, 1.0), vec3(1.0, -1.0, 1.0), vec3(1.0, -1.0, -1.0),
+		vec3(0, -1, 0), vec3(0, -1, 0), vec3(0, -1, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
 }
 
 void DrawTriangle3D(vec3 p1, vec3 p2, vec3 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t1, vec2 t2, vec2 t3) {

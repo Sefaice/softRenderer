@@ -41,6 +41,12 @@ static float* g_Zbuffer; // z buffer
 
 double g_dtime0;
 
+// mouse input
+bool cursorDown = false;
+int curPosLastx, curPosLasty, curOffx, curOffy;
+// scroll input
+float scrollOff = 0.0f;
+
 static void InitBackbufferBitmap();
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -100,7 +106,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		}
 	}
 
-
 	return 0;
 }
 
@@ -109,7 +114,8 @@ static void InitBackbufferBitmap() {
 	BITMAPINFO bmi;
 	bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
 	bmi.bmiHeader.biWidth = g_BitmapWidth;
-	bmi.bmiHeader.biHeight = g_BitmapHeight;
+	bmi.bmiHeader.biHeight = g_BitmapHeight; // bottom-up DIB
+	//bmi.bmiHeader.biHeight = -g_BitmapHeight; // top-down DIB
 	bmi.bmiHeader.biPlanes = 1;
 	bmi.bmiHeader.biBitCount = 32; // 32bits every pixel
 	bmi.bmiHeader.biCompression = BI_RGB;
@@ -144,12 +150,41 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 		PostQuitMessage(0);
 		return 0;
 	}
+	case WM_LBUTTONDOWN: {
+		cursorDown = true;
+		POINT curPos;
+		GetCursorPos(&curPos);
+		ScreenToClient(hwnd, &curPos);
+		curPosLastx = curPos.x;
+		curPosLasty = curPos.y;
+		return 0;
+	}
+	case WM_LBUTTONUP: {
+		cursorDown = false;
+		return 0;
+	}
+	case WM_MOUSEWHEEL: {
+		scrollOff += GET_WHEEL_DELTA_WPARAM(wParam) / 120.0f; // WHEEL_DELTA = 120
+	}
 	case WM_PAINT: {
 		// time
 		LARGE_INTEGER time1;
 		QueryPerformanceCounter(&time1);
 		static int s_FrameCount = 0;
-		UpdateBackBuffer((time1.QuadPart - g_dtime0) / 10000000.0); // call drawing main func
+
+		// mouse input
+		if (cursorDown) {
+			POINT curPos;
+			GetCursorPos(&curPos);
+			ScreenToClient(hwnd, &curPos);
+			curOffx = curPos.x - curPosLastx;
+			curOffy = curPosLasty - curPos.y; // GDI origin top-left, flip to bottom-left
+			curPosLastx = curPos.x;
+			curPosLasty = curPos.y;
+		}
+
+		// call drawing main func
+		UpdateBackBuffer((time1.QuadPart - g_dtime0) / 10000000.0, cursorDown, curOffx, curOffy, scrollOff);
 		s_FrameCount++;
 		LARGE_INTEGER time2;
 		QueryPerformanceCounter(&time2);
@@ -194,7 +229,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 		RECT clientRect;
 		GetClientRect(g_Wnd, &clientRect);
 
-		sprintf_s(s_Buffer, sizeof(s_Buffer), "%.1f FPS %d %d %d %d \n", 1.f / s, clientRect.left, clientRect.right, clientRect.top, clientRect.bottom);
+		sprintf_s(s_Buffer, sizeof(s_Buffer), "%.1f FPS %d %d %d %d\n", 
+			1.f / s, clientRect.left, clientRect.right, clientRect.top, clientRect.bottom);
 		OutputDebugStringA(s_Buffer);
 		/*s_Count = 0;
 		s_Time = 0;*/
@@ -215,68 +251,68 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 	return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-int main() {
-	InitBackbufferBitmap();
-
-	// init time
-	LARGE_INTEGER time0;
-	QueryPerformanceCounter(&time0);
-	g_dtime0 = time0.QuadPart;
-
-	// init renderer
-	InitRenderer(g_Backbuffer, g_Zbuffer, g_BackbufferWidth, g_BackbufferHeight);
-
-	while (true) {
-		// time
-		LARGE_INTEGER time1;
-		QueryPerformanceCounter(&time1);
-		static int s_FrameCount = 0;
-		UpdateBackBuffer((time1.QuadPart - g_dtime0) / 10000000.0); // call drawing main func
-		s_FrameCount++;
-		LARGE_INTEGER time2;
-		QueryPerformanceCounter(&time2);
-
-#if SSAA
-		for (int i = 0; i < g_BitmapWidth; i++) {
-			for (int j = 0; j < g_BitmapHeight; j++) {
-				uint32_t r = 0, g = 0, b = 0;
-				for (int k = 0; k < SSAA_LEVEL; k++) {
-					for (int l = 0; l < SSAA_LEVEL; l++) {
-						r += g_Backbuffer[(j * SSAA_LEVEL + l) * g_BackbufferWidth + i * SSAA_LEVEL + k] >> 16 & 0x000000FF;
-						g += g_Backbuffer[(j * SSAA_LEVEL + l) * g_BackbufferWidth + i * SSAA_LEVEL + k] >> 8 & 0x000000FF;
-						b += g_Backbuffer[(j * SSAA_LEVEL + l) * g_BackbufferWidth + i * SSAA_LEVEL + k] & 0x000000FF;
-					}
-				}
-				r /= (SSAA_LEVEL * SSAA_LEVEL);
-				g /= (SSAA_LEVEL * SSAA_LEVEL);
-				b /= (SSAA_LEVEL * SSAA_LEVEL);
-			
-				g_BackBitmapbuffer[j * g_BitmapWidth + i] = b | (g << 8) | (r << 16);
-			}
-		}
-#else
-		memcpy(g_BackBitmapbuffer, g_Backbuffer, g_BackbufferWidth * g_BackbufferHeight * sizeof(g_Backbuffer[0]));
-#endif
-	}
-
-
-	/*mat4 m(.5);
-	m.print();
-	vec4 a(0.5, 1.2, 2.3, 1.4);
-	a.print();
-	a = m * a;
-	a.print();*/
-
-	/*mat4 t = mat4(1, -2, 3, 7, 5, -6, 7, 10, -9, 10, 11, 13, 13, 14, -15, 20);
-	t.print();
-	transpose(t).print();
-
-	inverse(t).print();*/
-
-	//vec3 v(1, 2, 3), n(4, 5, 6);
-	//cross(n, v).print();
-
-	//system("pause");
-
-	return 0;
-}
+//int main() {
+//	InitBackbufferBitmap();
+//
+//	// init time
+//	LARGE_INTEGER time0;
+//	QueryPerformanceCounter(&time0);
+//	g_dtime0 = time0.QuadPart;
+//
+//	// init renderer
+//	InitRenderer(g_Backbuffer, g_Zbuffer, g_BackbufferWidth, g_BackbufferHeight);
+//
+//	while (true) {
+//		// time
+//		LARGE_INTEGER time1;
+//		QueryPerformanceCounter(&time1);
+//		static int s_FrameCount = 0;
+//		UpdateBackBuffer((time1.QuadPart - g_dtime0) / 10000000.0); // call drawing main func
+//		s_FrameCount++;
+//		LARGE_INTEGER time2;
+//		QueryPerformanceCounter(&time2);
+//
+//#if SSAA
+//		for (int i = 0; i < g_BitmapWidth; i++) {
+//			for (int j = 0; j < g_BitmapHeight; j++) {
+//				uint32_t r = 0, g = 0, b = 0;
+//				for (int k = 0; k < SSAA_LEVEL; k++) {
+//					for (int l = 0; l < SSAA_LEVEL; l++) {
+//						r += g_Backbuffer[(j * SSAA_LEVEL + l) * g_BackbufferWidth + i * SSAA_LEVEL + k] >> 16 & 0x000000FF;
+//						g += g_Backbuffer[(j * SSAA_LEVEL + l) * g_BackbufferWidth + i * SSAA_LEVEL + k] >> 8 & 0x000000FF;
+//						b += g_Backbuffer[(j * SSAA_LEVEL + l) * g_BackbufferWidth + i * SSAA_LEVEL + k] & 0x000000FF;
+//					}
+//				}
+//				r /= (SSAA_LEVEL * SSAA_LEVEL);
+//				g /= (SSAA_LEVEL * SSAA_LEVEL);
+//				b /= (SSAA_LEVEL * SSAA_LEVEL);
+//			
+//				g_BackBitmapbuffer[j * g_BitmapWidth + i] = b | (g << 8) | (r << 16);
+//			}
+//		}
+//#else
+//		memcpy(g_BackBitmapbuffer, g_Backbuffer, g_BackbufferWidth * g_BackbufferHeight * sizeof(g_Backbuffer[0]));
+//#endif
+//	}
+//
+//
+//	/*mat4 m(.5);
+//	m.print();
+//	vec4 a(0.5, 1.2, 2.3, 1.4);
+//	a.print();
+//	a = m * a;
+//	a.print();*/
+//
+//	/*mat4 t = mat4(1, -2, 3, 7, 5, -6, 7, 10, -9, 10, 11, 13, 13, 14, -15, 20);
+//	t.print();
+//	transpose(t).print();
+//
+//	inverse(t).print();*/
+//
+//	//vec3 v(1, 2, 3), n(4, 5, 6);
+//	//cross(n, v).print();
+//
+//	//system("pause");
+//
+//	return 0;
+//}

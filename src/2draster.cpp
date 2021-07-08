@@ -4,7 +4,7 @@ Raster2d::Raster2d(uint32_t* backBuffer, float* zBuffer, int backBufferWidth, in
 	: t_backBuffer(backBuffer), t_zBuffer(zBuffer), t_backBufferWidth(backBufferWidth), t_backBufferHeight(backBufferHeight) {}
 
 // draw single point
-// notice that GDI origin is lower-left corner
+// use bottom-up DIB, hence origin is at bottom-left corner, same as OpenGL
 void Raster2d::DrawPoint(vec2 p, float z, vec3 color) {
 	//for (int y = 0; y < frameHeight; y++) 
 	//{

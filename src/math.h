@@ -362,6 +362,20 @@ inline mat4 rotate(const mat4& m, float angle, vec3 axis) { // angle is in radia
 	return r * m;
 }
 
+inline mat4 getRotate(float angle, vec3 axis) {
+	axis = normalize(axis);
+	float a = cos(angle / 2);
+	float b = sin(angle / 2) * axis.x;
+	float c = sin(angle / 2) * axis.y;
+	float d = sin(angle / 2) * axis.z;
+	mat4 r = mat4(1 - 2 * c * c - 2 * d * d, 2 * b * c + 2 * a * d, 2 * b * d - 2 * a * c, 0,
+		2 * b * c - 2 * a * d, 1 - 2 * b * b - 2 * d * d, 2 * a * b + 2 * c * d, 0,
+		2 * a * c + 2 * b * d, 2 * c * d - 2 * a * b, 1 - 2 * b * b - 2 * c * c, 0,
+		0, 0, 0, 1);
+
+	return r;
+}
+
 inline mat4 scale(const mat4& m, float scaleAmount) {
 	mat4 s = mat4(scaleAmount, 0, 0, 0,
 		0, scaleAmount, 0, 0,
@@ -370,4 +384,3 @@ inline mat4 scale(const mat4& m, float scaleAmount) {
 
 	return s * m;
 }
-

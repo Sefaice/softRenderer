@@ -195,15 +195,6 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 	// draw cube
 	DrawCube();
 
-	////DrawTriangle3D(vec3(1.0, 1.0, 1.0), vec3(1.0, -1.0, -1.0), vec3(1.0, -1.0, 1.0),
-	////	vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // right
-	//DrawTriangle3D(vec3(1.0, 1.0, 1.0), vec3(1.0, 1.0, -1.0), vec3(1.0, -1.0, -1.0),
-	//	vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
-	////DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(1.0, 1.0, 1.0), vec3(-1.0, 1.0, 1.0),
-	////	vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // top
-	//DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(1.0, 1.0, -1.0), vec3(1.0, 1.0, 1.0),
-	//	vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
-
 	// test z
 	/*DrawTriangle3D(vec3(-3, 2, 0), vec3(2, -1, 0), vec3(-3, -1, 0.0),
 		vec3(1.0, 0, 0), vec3(0, 1, 0), vec3(0, 0, 1),
@@ -265,19 +256,13 @@ void DrawTriangle2D(vec4 p1, vec4 p2, vec4 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t
 			dvy += b2;
 
 			// on edge bool for polygon mode and top-let rule
-			/*bool onEdge12 = u == 0 && v > 0 && v < 1;
+			// do not know if the '==' works
+			bool onEdge12 = u == 0 && v > 0 && v < 1;
 			bool onEdge23 = (1 - u - v) == 0 && u > 0 & u < 1;
-			bool onEdge31 = v == 0 && u > 0 && u < 1;*/
-			bool onEdge12 = u > -0.01 && u < 0.01 && v > 0 && v < 1;
-			bool onEdge23 = (1 - u - v) > -0.01 && (1 - u - v) < 0.01 && u > 0 & u < 1;
-			bool onEdge31 = v > -0.01 && v < 0.01 && u > 0 && u < 1;
-
-			//// hack polygon mode
-			//if (onEdge12 || onEdge23 || onEdge31) {
-			//	// z interpolation
-			//	double z = 1 / (u / p3.z + v / p2.z + (1 - u - v) / p1.z);
-			//	raster2d->DrawPoint(vec2(x, y), z, vec3(1, 1, 1));
-			//}
+			bool onEdge31 = v == 0 && u > 0 && u < 1;
+			/*bool onEdge12 = u > -0.0001 && u < 0.0001 && v > 0 && v < 1;
+			bool onEdge23 = (1 - u - v) > -0.0001 && (1 - u - v) < 0.0001 && u > 0 & u < 1;
+			bool onEdge31 = v > -0.0001 && v < 0.0001 && u > 0 && u < 1;*/
 
 			// top-left rule
 			bool overlap = ((o_y12 > 0 && onEdge12) || (o_y23 == 0 && o_x23 > 0 && onEdge23) || // 12 left, 23 top

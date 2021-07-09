@@ -6,9 +6,9 @@
 
 class Raster2d {
 public:
-	Raster2d(uint32_t* t_backBuffer, float* t_zBuffer, int t_backBufferWidth, int t_backBufferHeight);
+	Raster2d(uint32_t* t_backBuffer, double* t_zBuffer, int t_backBufferWidth, int t_backBufferHeight);
 
-	void DrawPoint(vec2 p, float z, vec3 color);
+	void DrawPoint(vec2 p, double z, vec3 color);
 
 	// Bresenham Algorithm
 	void DrawLine(int x0, int y0, int x1, int y1);
@@ -19,11 +19,10 @@ public:
 
 private:
 	uint32_t* t_backBuffer;
-	float* t_zBuffer;
+	double* t_zBuffer;
 	int t_backBufferWidth;
 	int t_backBufferHeight;
 };
-
 
 
 // 3D rasterization helpers

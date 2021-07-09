@@ -11,8 +11,8 @@
 
 #include "3draster.h"
 
-#define WINDOW_WIDTH 1280
-#define WINDOW_HEIGHT 720
+#define WINDOW_WIDTH 1920
+#define WINDOW_HEIGHT 1080
 
 #define SSAA 0
 #define SSAA_LEVEL 2 // SSAA_LEVEL^2 x SSAA
@@ -37,7 +37,7 @@ static const int g_BitmapHeight = WINDOW_HEIGHT;
 
 static uint32_t* g_Backbuffer;
 static uint32_t* g_BackBitmapbuffer; // for SSAA
-static float* g_Zbuffer; // z buffer
+static double* g_Zbuffer; // z buffer
 
 double g_dtime0;
 
@@ -81,7 +81,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		L"soft",                        // Window text
 		WS_OVERLAPPEDWINDOW,            // Window style
 		// position and size
-		CW_USEDEFAULT, CW_USEDEFAULT, WINDOW_WIDTH + 16, WINDOW_HEIGHT + 39,
+		CW_USEDEFAULT, CW_USEDEFAULT, WINDOW_WIDTH + 24, WINDOW_HEIGHT + 64,
 		NULL,       // Parent window    
 		NULL,       // Menu
 		hInstance,  // Instance handle
@@ -135,7 +135,7 @@ static void InitBackbufferBitmap() {
 	SelectObject(g_HBackbufferDC, g_BackbufferBitmap);
 
 	// init zbuffer
-	g_Zbuffer = new float[g_BackbufferWidth * g_BackbufferHeight];
+	g_Zbuffer = new double[g_BackbufferWidth * g_BackbufferHeight];
 	std::fill(g_Zbuffer, g_Zbuffer + g_BackbufferWidth * g_BackbufferHeight, 1.0);
 }
 

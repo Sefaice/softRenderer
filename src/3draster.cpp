@@ -9,7 +9,7 @@
 #define POLYGON_MODE 0
 
 uint32_t* t_backBuffer; // DONOT change while using, use as starting point
-float* t_zBuffer;
+double* t_zBuffer;
 int t_backBufferWidth, t_backBufferHeight;
 double t_dtime;
 
@@ -49,7 +49,7 @@ mat4 model_tmp; // use model for lighting temporarily
 //std::vector<vec3> verticesVector_quad;
 //unsigned int subdivision_num = 3;
 
-void InitRenderer(uint32_t* backBuffer, float* zbuffer, int backBufferWidth, int backBufferHeight) {
+void InitRenderer(uint32_t* backBuffer, double* zbuffer, int backBufferWidth, int backBufferHeight) {
 
 	t_backBuffer = backBuffer;
 	t_zBuffer = zbuffer;
@@ -152,7 +152,6 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 	model = rotation * model;
 	model = scale(model, 2.0f + scrollOff / 10.0f);
 	// view
-	
 	mat4 view1 = mat4(cameraRight.x, cameraUp.x, cameraBackword.x, 0,
 		cameraRight.y, cameraUp.y, cameraBackword.y, 0,
 		cameraRight.z, cameraUp.z, cameraBackword.z, 0,
@@ -196,8 +195,17 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 	// draw cube
 	DrawCube();
 
+	////DrawTriangle3D(vec3(1.0, 1.0, 1.0), vec3(1.0, -1.0, -1.0), vec3(1.0, -1.0, 1.0),
+	////	vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // right
+	//DrawTriangle3D(vec3(1.0, 1.0, 1.0), vec3(1.0, 1.0, -1.0), vec3(1.0, -1.0, -1.0),
+	//	vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
+	////DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(1.0, 1.0, 1.0), vec3(-1.0, 1.0, 1.0),
+	////	vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // top
+	//DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(1.0, 1.0, -1.0), vec3(1.0, 1.0, 1.0),
+	//	vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
+
 	// test z
-	/*DrawTriangle3D(vec3(-5, 3, 0), vec3(0, 0, 0), vec3(-5, 0, 0.0),
+	/*DrawTriangle3D(vec3(-3, 2, 0), vec3(2, -1, 0), vec3(-3, -1, 0.0),
 		vec3(1.0, 0, 0), vec3(0, 1, 0), vec3(0, 0, 1),
 		vec2(0.0, 1.0), vec2(1.0, 0.0), vec2(0.0, 0.0));*/
 	/*DrawTriangle3D(vec3(-1, 2, 1), vec3(1.5, 1, -1.0), vec3(1, -1, -1.5),
@@ -228,31 +236,31 @@ void DrawTriangle2D(vec4 p1, vec4 p2, vec4 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t
 		maxy = maxInThree(p1.y, p2.y, p3.y), miny = minInThree(p1.y, p2.y, p3.y);
 
 	// optimized barycentric coordinate
-	float x0 = p3.x - p1.x, y0 = p3.y - p1.y;
-	float x1 = p2.x - p1.x, y1 = p2.y - p1.y;
-	float temp_00 = x0 * x0 + y0 * y0;
-	float temp_01 = x0 * x1 + y0 * y1;
-	float temp_11 = x1 * x1 + y1 * y1;
+	double x0 = p3.x - p1.x, y0 = p3.y - p1.y;
+	double x1 = p2.x - p1.x, y1 = p2.y - p1.y;
+	double temp_00 = x0 * x0 + y0 * y0;
+	double temp_01 = x0 * x1 + y0 * y1;
+	double temp_11 = x1 * x1 + y1 * y1;
 
-	float a1 = (x0 * y1 * y1 - x1 * y0 * y1) / (temp_00 * temp_11 - temp_01 * temp_01);
-	float a2 = (x1 * x1 * y0 - x0 * x1 * y1) / (temp_00 * temp_11 - temp_01 * temp_01);
-	float b1 = (x1 * y0 * y0 - x0 * y0 * y1) / (temp_00 * temp_11 - temp_01 * temp_01);
-	float b2 = (x0 * x0 * y1 - x0 * x1 * y0) / (temp_00 * temp_11 - temp_01 * temp_01);
+	double a1 = (x0 * y1 * y1 - x1 * y0 * y1) / (temp_00 * temp_11 - temp_01 * temp_01);
+	double a2 = (x1 * x1 * y0 - x0 * x1 * y1) / (temp_00 * temp_11 - temp_01 * temp_01);
+	double b1 = (x1 * y0 * y0 - x0 * y0 * y1) / (temp_00 * temp_11 - temp_01 * temp_01);
+	double b2 = (x0 * x0 * y1 - x0 * x1 * y0) / (temp_00 * temp_11 - temp_01 * temp_01);
 
-	float u0 = a1 * (minx - p1.x) + a2 * (miny - p1.y);
-	float v0 = b1 * (minx - p1.x) + b2 * (miny - p1.y);
+	double u0 = a1 * (minx - p1.x) + a2 * (miny - p1.y);
+	double v0 = b1 * (minx - p1.x) + b2 * (miny - p1.y);
 
 	// for top-left rule
-	float o_x12 = p2.x - p1.x, o_y12 = p2.y - p1.y;
-	float o_x23 = p3.x - p2.x, o_y23 = p3.y - p2.y;
-	float o_x31 = p1.x - p3.x, o_y31 = p1.y - p3.y;
+	double o_x12 = p2.x - p1.x, o_y12 = p2.y - p1.y;
+	double o_x23 = p3.x - p2.x, o_y23 = p3.y - p2.y;
+	double o_x31 = p1.x - p3.x, o_y31 = p1.y - p3.y;
 
 	for (int x = minx; x <= maxx; x++) {
-		float duy = 0, dvy = 0;
+		double duy = 0, dvy = 0;
 		for (int y = miny; y <= maxy; y++) {
 			// params: u - 3, v - 2, (1-u-v) - 1
-			float u = u0 + duy;
-			float v = v0 + dvy;
+			double u = u0 + duy;
+			double v = v0 + dvy;
 			duy += a2;
 			dvy += b2;
 
@@ -263,11 +271,11 @@ void DrawTriangle2D(vec4 p1, vec4 p2, vec4 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t
 			bool onEdge12 = u > -0.01 && u < 0.01 && v > 0 && v < 1;
 			bool onEdge23 = (1 - u - v) > -0.01 && (1 - u - v) < 0.01 && u > 0 & u < 1;
 			bool onEdge31 = v > -0.01 && v < 0.01 && u > 0 && u < 1;
-			
+
 			//// hack polygon mode
 			//if (onEdge12 || onEdge23 || onEdge31) {
 			//	// z interpolation
-			//	float z = 1 / (u / p3.z + v / p2.z + (1 - u - v) / p1.z);
+			//	double z = 1 / (u / p3.z + v / p2.z + (1 - u - v) / p1.z);
 			//	raster2d->DrawPoint(vec2(x, y), z, vec3(1, 1, 1));
 			//}
 
@@ -278,12 +286,12 @@ void DrawTriangle2D(vec4 p1, vec4 p2, vec4 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t
 
 			if (u > 0 && v > 0 && u + v < 1 || overlap) {
 				// interpolation
-				float inte_tmp1 = (1 - u - v) * p1.w;
-				float inte_tmp2 = v * p2.w;
-				float inte_tmp3 = u * p3.w;
-				float z = 1 / (inte_tmp1 + inte_tmp2 + inte_tmp3); // interpolated view space depth for attributes interpolation
+				double inte_tmp1 = (1 - u - v) * p1.w;
+				double inte_tmp2 = v * p2.w;
+				double inte_tmp3 = u * p3.w;
+				double z = 1 / (inte_tmp1 + inte_tmp2 + inte_tmp3); // interpolated view space depth for attributes interpolation
 				// z interpolation
-				float bufferz = z * (p1.z * inte_tmp1 + p2.z * inte_tmp2 + p3.z * inte_tmp3); // depth in [N,F], for z-buffer storing
+				double bufferz = z * (p1.z * inte_tmp1 + p2.z * inte_tmp2 + p3.z * inte_tmp3); // depth in [N,F], for z-buffer storing
 				bufferz = frustum_f / (frustum_f - frustum_n) + frustum_f * frustum_n / (frustum_n - frustum_f) / bufferz; // interpolated z in [0,1]
 				// normal
 				vec3 normal;

@@ -1,11 +1,11 @@
 #include "2draster.h"
 
-Raster2d::Raster2d(uint32_t* backBuffer, float* zBuffer, int backBufferWidth, int backBufferHeight)
+Raster2d::Raster2d(uint32_t* backBuffer, double* zBuffer, int backBufferWidth, int backBufferHeight)
 	: t_backBuffer(backBuffer), t_zBuffer(zBuffer), t_backBufferWidth(backBufferWidth), t_backBufferHeight(backBufferHeight) {}
 
 // draw single point
 // use bottom-up DIB, hence origin is at bottom-left corner, same as OpenGL
-void Raster2d::DrawPoint(vec2 p, float z, vec3 color) {
+void Raster2d::DrawPoint(vec2 p, double z, vec3 color) {
 	//for (int y = 0; y < frameHeight; y++) 
 	//{
 	//	for (int x = 0; x < frameWidth; x++)
@@ -24,7 +24,7 @@ void Raster2d::DrawPoint(vec2 p, float z, vec3 color) {
 		return;*/
 		//printf("final p: %d %d\n", p.x, p.y);
 
-	float* zBuffer = t_zBuffer + (int)(p.y) * t_backBufferWidth + (int)(p.x);
+	double* zBuffer = t_zBuffer + (int)(p.y) * t_backBufferWidth + (int)(p.x);
 	if (z < zBuffer[0]) { // pass z test
 		// update z-buffer
 		zBuffer[0] = z;

@@ -5,7 +5,7 @@
 #include "vertexShader.h"
 #include "fragmentShader.h"
 
-void InitRenderer(uint32_t* backBuffer, float* zbuffer, int backBufferWidth, int backBufferHeight);
+void InitRenderer(uint32_t* backBuffer, double* zbuffer, int backBufferWidth, int backBufferHeight);
 void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, float scrollOff);
 
 // 2D rasterization

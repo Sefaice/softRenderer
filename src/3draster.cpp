@@ -1,220 +1,65 @@
 #include "3draster.h"
 #include "./subdivision/halfedge.h"
 
-#include "OBJ_Loader.h"
+#include "./utils/vertex.h"
 
 #include <iostream>
-#include <time.h>
 
 #define POLYGON_MODE 0
 
-uint32_t* t_backBuffer; // DONOT change while using, use as starting point
-double* t_zBuffer;
-int t_backBufferWidth, t_backBufferHeight;
-double t_dtime;
+Raster3d::Raster3d(Raster2d* raster2d, float frustum_n, float frustum_f,
+	unsigned int backBufferWidth, unsigned int backBufferHeight) 
+	: t_raster2d(raster2d), t_frustum_n(frustum_n), t_frustum_f(frustum_f), 
+	t_backBufferWidth(backBufferWidth), t_backBufferHeight(backBufferHeight) {}
 
-std::vector<Triangle*> modelTriangles;
+void Raster3d::DrawTriangle3D(vec3 p1, vec3 p2, vec3 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t1, vec2 t2, vec2 t3, 
+	VertexShader* vertexShader, FragmentShader* fragmentShader) {
 
-Raster2d* raster2d;
+	// vertex shader
+	Vertex v1 = vertexShader->vShader(p1, n1, t1);
+	Vertex v2 = vertexShader->vShader(p2, n2, t2);
+	Vertex v3 = vertexShader->vShader(p3, n3, t3);
 
-// shaders
-VertexShader* vertexShader;
-FragmentShader* fragmentShader;
+	// clip
+	std::vector<Vertex> vertices; vertices.push_back(v1); vertices.push_back(v2); vertices.push_back(v3);
+	std::vector<Vertex> result = Clip(vertices);
 
-// texture
-Texture* texture;
+	// tessellation
+	if (result.size() > 0) { // result not empty
+		Vertex initVertex = result[0];
+		vec4 p1s = DV_transform(initVertex.pos);
 
-// view frustum
-float frustum_n = .1f;
-float frustum_f = 100.0f;
+		for (int i = 1; i < result.size() - 1; i++) {
+			Vertex secVertex = result[i];
+			Vertex thiVertex = result[i + 1];
+			vec4 p2s = DV_transform(secVertex.pos);
+			vec4 p3s = DV_transform(thiVertex.pos);
 
-// camera
-vec3 viewPos(0, 0, 15);
-vec3 cameraPos = viewPos;
-vec3 cameraRight = vec3(1, 0, 0);
-vec3 cameraUp = vec3(0, 1, 0);
-vec3 cameraBackword = vec3(0, 0, 1);
-
-// transform matrix
-mat4 rotation = mat4(1.0f);
-
-// light
-vec3 lightPos(.0f, 3.0f, 3.0f);
-vec3 lightColor(1.0f, 1.0f, 1.0f);
-mat4 model_tmp; // use model for lighting temporarily
-
-//// subdivision
-//HalfEdge global_h;
-//std::vector<std::pair<vec3, vec3>> verticesVector;
-//std::vector<vec3> verticesVector_quad;
-//unsigned int subdivision_num = 3;
-
-void InitRenderer(uint32_t* backBuffer, double* zbuffer, int backBufferWidth, int backBufferHeight) {
-
-	t_backBuffer = backBuffer;
-	t_zBuffer = zbuffer;
-	t_backBufferWidth = backBufferWidth;
-	t_backBufferHeight = backBufferHeight;
-	raster2d = new Raster2d(backBuffer, zbuffer, backBufferWidth, backBufferHeight);
-
-	// load texture
-	texture = new Texture("../../src/res/board.jpg");
-
-	//// load objects
-	//objl::Loader loader;
-	//bool load = loader.LoadFile("../../src/res/models/spot_triangulated.obj");
-	//if (!load) {
-	//	std::cout << "Load obj file failed" << std::endl;
-	//}
-	//else {
-	//	std::cout << "Load obj file succeed" << std::endl;
-
-	//	for (auto mesh : loader.LoadedMeshes)
-	//	{
-	//		for (int i = 0; i < mesh.Vertices.size(); i += 3)
-	//		{
-	//			Triangle* t = new Triangle();
-	//			for (int j = 0; j < 3; j++) // a triangle each time
-	//			{
-	//				t->pos[j] = vec3(mesh.Vertices[i + j].Position.X, mesh.Vertices[i + j].Position.Y, mesh.Vertices[i + j].Position.Z);
-	//				t->texCoords[j] = vec2(mesh.Vertices[i + j].TextureCoordinate.X, mesh.Vertices[i + j].TextureCoordinate.Y);
-	//				t->normal[j] = vec3(mesh.Vertices[i + j].Normal.X, mesh.Vertices[i + j].Normal.Y, mesh.Vertices[i + j].Normal.Z);
-	//			}
-	//			modelTriangles.push_back(t);
-	//		}
-	//	}
-	//}
-
-	//// init subdivision cube
-	//float vertices[] = {
-	//	-2.0f, -2.0f, -2.0f, // back
-	//	-2.0f, 2.0f, -2.0f,
-	//	2.0f, 2.0f, -2.0f,
-	//	2.0f, -2.0f, -2.0f,
-	//	2.0f, 2.0f, 2.0f, // top
-	//	2.0f, 2.0f, -2.0f,
-	//	-2.0f, 2.0f, -2.0f,
-	//	-2.0f, 2.0f, 2.0f,
-	//	-2.0f, -2.0f, 2.0f, // left
-	//	-2.0f, 2.0f, 2.0f,
-	//	-2.0f, 2.0f, -2.0f,
-	//	-2.0f, -2.0f, -2.0f,
-	//	2.0f, -2.0f, -2.0f, // right
-	//	2.0f, 2.0f, -2.0f,
-	//	2.0f, 2.0f, 2.0f,
-	//	2.0f, -2.0f, 2.0f,
-	//	2.0f, -2.0f, 2.0f, // front
-	//	2.0f, 2.0f, 2.0f,
-	//	-2.0f, 2.0f, 2.0f,
-	//	-2.0f, -2.0f, 2.0f,
-	//	2.0f, -2.0f, -2.0f, // bottom
-	//	2.0f, -2.0f, 2.0f,
-	//	-2.0f, -2.0f, 2.0f,
-	//	-2.0f, -2.0f, -2.0f
-	//};
-	//unsigned int numVertices = sizeof(vertices) / sizeof(float); // 24
-	//global_h.from_mesh_float(vertices, numVertices);
-	//global_h.to_mesh(verticesVector, verticesVector_quad);
-	//// subdivide
-	//for (unsigned int i = 0; i < subdivision_num; i++) {
-	//	global_h.from_mesh(verticesVector_quad);
-	//	global_h.subdivide();
-	//	global_h.to_mesh(verticesVector, verticesVector_quad);
-	//}
+			DrawTriangle2D(p1s, p2s, p3s, initVertex.normal, secVertex.normal, thiVertex.normal,
+				initVertex.texCoords, secVertex.texCoords, thiVertex.texCoords,
+				initVertex.worldPos, secVertex.worldPos, thiVertex.worldPos,
+				fragmentShader);
+		}
+	}
 }
 
-void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, float scrollOff) {
-	t_dtime = dt;
+// divide, viewport transform
+vec4 Raster3d::DV_transform(vec4 pp) {
+	// proj divide
+	float inverseClipW = 1.0f / pp.w;
+	vec3 pNDC = vec3(pp.x * inverseClipW, pp.y * inverseClipW, pp.z * inverseClipW);
 
-	// clear backbuffer
-	memset(t_backBuffer, 0, t_backBufferWidth * t_backBufferHeight * sizeof(t_backBuffer[0]));
-	// clear z-buffer
-	/*for (int i = 0; i < t_backBufferWidth; i++) {
-		for (int j = 0; j < t_backBufferHeight; j++) {
-			t_zBuffer[j * t_backBufferWidth + i] = 1.0;
-		}
-	}*/
-	std::fill(t_zBuffer, t_zBuffer + t_backBufferWidth * t_backBufferHeight, 1.0);
+	// viewport transform
+	float z = (t_frustum_f - t_frustum_n) / 2 * pNDC.z + (t_frustum_f + t_frustum_n) / 2; // depth range [N,F]
+	vec4 ps = vec4((pNDC.x + 1.0) / 2.0 * (t_backBufferWidth - 1), (pNDC.y + 1.0) / 2.0 * (t_backBufferHeight - 1), z, inverseClipW);
 
-	// init mats and shaders
-	// model
-	mat4 model = mat4(1.0);
-	//model = translate(model, vec3(6.0f * float(sin(t_dtime / 5.0f)), 0.0, 0.0));
-	//model = translate(model, vec3(.0, 0.0, 0.0));
-	//model = rotate(model, radians(30.0), vec3(1, 1, 0));
-	//model = rotate(model, t_dtime / 4.0, vec3(1, 1, 1));
-	//model = rotate(model, sin(t_dtime), vec3(-1, 0, 0));
-	// focus camera
-	if (cursorDown) {
-		vec3 rotateAxis = cross(vec3(curOffx, curOffy, 0), -cameraBackword);
-		rotation = getRotate(sqrt(curOffx * curOffx + curOffy * curOffy) / 300.0f, rotateAxis) * rotation;
-	}
-	model = rotation * model;
-	model = scale(model, 2.0f + scrollOff / 10.0f);
-	// view
-	mat4 view1 = mat4(cameraRight.x, cameraUp.x, cameraBackword.x, 0,
-		cameraRight.y, cameraUp.y, cameraBackword.y, 0,
-		cameraRight.z, cameraUp.z, cameraBackword.z, 0,
-		0, 0, 0, 1);
-	mat4 view2 = mat4(1, 0, 0, 0,
-		0, 1, 0, 0,
-		0, 0, 1, 0,
-		-cameraPos.x, -cameraPos.y, -cameraPos.z, 1);
-	mat4 view = view1 * view2;
-	// projection
-	float fov = 45.0f;
-	float ar = (float)t_backBufferWidth / (float)t_backBufferHeight;
-	float tanHalfHFOV = tanf(radians(fov / 2.0f)) * ar;
-	float tanHalfVFOV = tanf(radians(fov / 2.0f));
-	float r = frustum_n * tanHalfHFOV, l = -frustum_n * tanHalfHFOV;
-	float t = frustum_n * tanHalfVFOV, b = -frustum_n * tanHalfVFOV;
-	mat4 projection = mat4(2 * frustum_n / (r - l), 0, 0, 0,
-		0, 2 * frustum_n / (t - b), 0, 0,
-		(r + l) / (r - l), (t + b) / (t - b), -(frustum_f + frustum_n) / (frustum_f - frustum_n), -1,
-		0, 0, -2 * frustum_f * frustum_n / (frustum_f - frustum_n), 0);
-
-	// shaders
-	vertexShader = new VertexShader(model, view, projection);
-	fragmentShader = new FragmentShader(texture, lightColor, lightPos, viewPos);
-
-	//// draw point
-	//raster2d->DrawPoint(vec2(500, 100), bufferz, vec3(0, 0, 1));
-	//// draw line by Bresenham Algorithm
-	///*if (!initBresenham) {
-	//	InitLine(100, 100, 800, 700);
-	//	initBresenham = true;
-	//}
-	//DrawLine(backBuffer, backBufferWidth, backBufferHeight);
-	//raster2d->DrawLine(200, 100, 800, 700);
-	/*for (int i = 200; i < 800; i++) {
-		raster2d->DrawPoint(vec2(i, i-100), 0, vec3(0, 0, 1));
-	}*/
-	//// draw line by wu's algorithm
-	//raster2d->DrawLineWu(100, 100, 800, 700);
-	
-	// draw cube
-	DrawCube();
-
-	// test z
-	/*DrawTriangle3D(vec3(-3, 2, 0), vec3(2, -1, 0), vec3(-3, -1, 0.0),
-		vec3(1.0, 0, 0), vec3(0, 1, 0), vec3(0, 0, 1),
-		vec2(0.0, 1.0), vec2(1.0, 0.0), vec2(0.0, 0.0));*/
-	/*DrawTriangle3D(vec3(-1, 2, 1), vec3(1.5, 1, -1.0), vec3(1, -1, -1.5),
-		vec3(1, 0, 0), vec3(0, 1, 0), vec3(0, 0, 1));
-	DrawTriangle3D(vec3(-3, -1, 0), vec3(0, -1, 0.0), vec3(-5, -5, -3),
-		vec3(1.0, 0, 0), vec3(0, 1, 0), vec3(0, 0, 1));*/
-
-	//// draw object
-	//for (int i = 0; i < modelTriangles.size(); i++) {
-	//	DrawTriangle3D(modelTriangles[i]->pos[0], modelTriangles[i]->pos[1], modelTriangles[i]->pos[2], 
-	//		modelTriangles[i]->normal[0], modelTriangles[i]->normal[1], modelTriangles[i]->normal[2],
-	//		modelTriangles[i]->texCoords[0], modelTriangles[i]->texCoords[1], modelTriangles[i]->texCoords[2]);
-	//}
+	return ps;
 }
 
 // draw triangle by line equation / center
-void DrawTriangle2D(vec4 p1, vec4 p2, vec4 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t1, vec2 t2, vec2 t3,
-	vec3 pw1, vec3 pw2, vec3 pw3) {
+void Raster3d::DrawTriangle2D(vec4 p1, vec4 p2, vec4 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t1, vec2 t2, vec2 t3,
+	vec3 pw1, vec3 pw2, vec3 pw3, FragmentShader* fragmentShader) {
+
 #if POLYGON_MODE // draw frame in polygon mode
 	raster2d->DrawLine(p1.x, p1.y, p2.x, p2.y);
 	raster2d->DrawLine(p2.x, p2.y, p3.x, p3.y);
@@ -277,7 +122,7 @@ void DrawTriangle2D(vec4 p1, vec4 p2, vec4 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t
 				double z = 1 / (inte_tmp1 + inte_tmp2 + inte_tmp3); // interpolated view space depth for attributes interpolation
 				// z interpolation
 				double bufferz = z * (p1.z * inte_tmp1 + p2.z * inte_tmp2 + p3.z * inte_tmp3); // depth in [N,F], for z-buffer storing
-				bufferz = frustum_f / (frustum_f - frustum_n) + frustum_f * frustum_n / (frustum_n - frustum_f) / bufferz; // interpolated z in [0,1]
+				bufferz = t_frustum_f / (t_frustum_f - t_frustum_n) + t_frustum_f * t_frustum_n / (t_frustum_n - t_frustum_f) / bufferz; // interpolated z in [0,1]
 				// normal
 				vec3 normal;
 				normal.x = z * (n1.x * inte_tmp1 + n2.x * inte_tmp2 + n3.x * inte_tmp3);
@@ -298,8 +143,9 @@ void DrawTriangle2D(vec4 p1, vec4 p2, vec4 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t
 				vec3 color = fragmentShader->shading_phong(normal, texCoords, worldPos);
 				//vec3 color = fragmentShader->shading_bump(normal, texCoords, worldPos);
 				//vec3 color = fragmentShader->shading_displacement(normal, texCoords, worldPos);
+				//vec3 color = fragmentShader->shading_obj(normal, texCoords, worldPos, diffuseMap, specularMap, normalMap);
 
-				raster2d->DrawPoint(vec2(x, y), bufferz, color);
+				t_raster2d->DrawPoint(vec2(x, y), bufferz, color);
 			}
 		}
 		u0 += a1;
@@ -308,86 +154,52 @@ void DrawTriangle2D(vec4 p1, vec4 p2, vec4 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t
 #endif
 }
 
-/* draw cube from position&normal vector
-*/
-void DrawCube() {
-//void DrawCube(std::vector<std::pair<vec3, vec3>> verticesVector) {
+// check if a point is in triangle funcs
+// same side with line equation method
+bool isInTriangle1(int x, int y, vec3 p1, vec3 p2, vec3 p3) {
+	int lineParams[9];
+	lineParams[0] = p2.y - p1.y;
+	lineParams[1] = p1.x - p2.x;
+	lineParams[2] = p2.x * p1.y - p1.x * p2.y;
+	lineParams[3] = p3.y - p2.y;
+	lineParams[4] = p2.x - p3.x;
+	lineParams[5] = p3.x * p2.y - p2.x * p3.y;
+	lineParams[6] = p1.y - p3.y;
+	lineParams[7] = p3.x - p1.x;
+	lineParams[8] = p1.x * p3.y - p3.x * p1.y;
 
-	/*for (unsigned int i = 0; i < verticesVector.size(); i += 3) {
-		DrawTriangle3D(verticesVector[i].first, verticesVector[i + 1].first, verticesVector[i + 2].first,
-			verticesVector[i].second, verticesVector[i + 1].second, verticesVector[i + 2].second,
-			vec2(0, 0), vec2(0, 0), vec2(0, 0));
-	}*/
+	int param1 = lineParams[0] * x + lineParams[1] * y + lineParams[2];
+	int param2 = lineParams[3] * x + lineParams[4] * y + lineParams[5];
+	int param3 = lineParams[6] * x + lineParams[7] * y + lineParams[8];
 
-	DrawTriangle3D(vec3(-1.0, 1.0, 1.0), vec3(1.0, -1.0, 1.0), vec3(-1.0, -1.0, 1.0),
-		vec3(0, 0, 1), vec3(0, 0, 1), vec3(0, 0, 1), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // front
-	DrawTriangle3D(vec3(-1.0, 1.0, 1.0), vec3(1.0, 1.0, 1.0), vec3(1.0, -1.0, 1.0),
-		vec3(0, 0, 1), vec3(0, 0, 1), vec3(0, 0, 1), vec2(0, 1), vec2(1, 1), vec2(1, 0));
-
-	DrawTriangle3D(vec3(1.0, 1.0, 1.0), vec3(1.0, -1.0, -1.0), vec3(1.0, -1.0, 1.0),
-		vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // right
-	DrawTriangle3D(vec3(1.0, 1.0, 1.0), vec3(1.0, 1.0, -1.0), vec3(1.0, -1.0, -1.0),
-		vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
-
-	DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(1.0, 1.0, 1.0), vec3(-1.0, 1.0, 1.0),
-		vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // top
-	DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(1.0, 1.0, -1.0), vec3(1.0, 1.0, 1.0),
-		vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
-
-	DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(-1.0, -1.0, 1.0), vec3(-1.0, -1.0, -1.0),
-		vec3(-1.0, 0, 0), vec3(-1.0, 0, 0), vec3(-1.0, 0, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // left
-	DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(-1.0, 1.0, 1.0), vec3(-1.0, -1.0, 1.0),
-		vec3(-1.0, 0, 0), vec3(-1.0, 0, 0), vec3(-1.0, 0, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
-
-	DrawTriangle3D(vec3(1.0, 1.0, -1.0), vec3(-1.0, -1.0, -1.0), vec3(1.0, -1.0, -1.0),
-		vec3(0, 0, -1), vec3(0, 0, -1), vec3(0, 0, -1), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // back
-	DrawTriangle3D(vec3(1.0, 1.0, -1.0), vec3(-1.0, 1.0, -1.0), vec3(-1.0, -1.0, -1.0),
-		vec3(0, 0, -1), vec3(0, 0, -1), vec3(0, 0, -1), vec2(0, 1), vec2(1, 1), vec2(1, 0));
-
-	DrawTriangle3D(vec3(-1.0, -1.0, 1.0), vec3(1.0, -1.0, -1.0), vec3(-1.0, -1.0, -1.0),
-		vec3(0, -1, 0), vec3(0, -1, 0), vec3(0, -1, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0));  // bottom
-	DrawTriangle3D(vec3(-1.0, -1.0, 1.0), vec3(1.0, -1.0, 1.0), vec3(1.0, -1.0, -1.0),
-		vec3(0, -1, 0), vec3(0, -1, 0), vec3(0, -1, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
+	if ((param1 >= 0 && param2 >= 0 && param3 >= 0) || (param1 <= 0 && param2 <= 0 && param3 <= 0)) return true;
+	return false;
 }
 
-void DrawTriangle3D(vec3 p1, vec3 p2, vec3 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t1, vec2 t2, vec2 t3) {
+// Barycentric method
+bool isInTriangle2(int x, int y, vec3 p1, vec3 p2, vec3 p3) {
+	float x0 = p3.x - p1.x, y0 = p3.y - p1.y;
+	float x1 = p2.x - p1.x, y1 = p2.y - p1.y;
+	float x2 = x - p1.x, y2 = y - p1.y;
 
-	// vertex shader
-	Vertex v1 = vertexShader->vShader(p1, n1, t1);
-	Vertex v2 = vertexShader->vShader(p2, n2, t2);
-	Vertex v3 = vertexShader->vShader(p3, n3, t3);
+	float temp_00 = x0 * x0 + y0 * y0;
+	float temp_01 = x0 * x1 + y0 * y1;
+	float temp_02 = x0 * x2 + y0 * y2;
+	float temp_11 = x1 * x1 + y1 * y1;
+	float temp_12 = x1 * x2 + y1 * y2;
 
-	// clip
-	std::vector<Vertex> vertices; vertices.push_back(v1); vertices.push_back(v2); vertices.push_back(v3);
-	std::vector<Vertex> result = Clip(vertices);
+	float u = float(temp_11 * temp_02 - temp_01 * temp_12) / (float)(temp_00 * temp_11 - temp_01 * temp_01);
+	float v = float(temp_00 * temp_12 - temp_01 * temp_02) / (float)(temp_00 * temp_11 - temp_01 * temp_01);
 
-	// tessellation
-	if (result.size() > 0) { // result not empty
-		Vertex initVertex = result[0];
-		vec4 p1s = DV_transform(initVertex.pos);
-
-		for (int i = 1; i < result.size() - 1; i++) {
-			Vertex secVertex = result[i];
-			Vertex thiVertex = result[i + 1];
-			vec4 p2s = DV_transform(secVertex.pos);
-			vec4 p3s = DV_transform(thiVertex.pos);
-
-			DrawTriangle2D(p1s, p2s, p3s, initVertex.normal, secVertex.normal, thiVertex.normal,
-				initVertex.texCoords, secVertex.texCoords, thiVertex.texCoords,
-				initVertex.worldPos, secVertex.worldPos, thiVertex.worldPos);
-		}
-	}
+	if ((u >= 0) && (v >= 0) && (u + v <= 1)) return true;
+	return false;
 }
 
-// divide, viewport transform
-vec4 DV_transform(vec4 pp) {
-	// proj divide
-	float inverseClipW = 1.0f / pp.w;
-	vec3 pNDC = vec3(pp.x * inverseClipW, pp.y * inverseClipW, pp.z * inverseClipW);
+// draw triangle helper funcs
+float maxInThree(float a, float b, float c) {
+	return a > b ? std::max(a, c) : std::max(b, c);
+}
 
-	// viewport transform
-	float z = (frustum_f - frustum_n) / 2 * pNDC.z + (frustum_f + frustum_n) / 2; // depth range [N,F]
-	vec4 ps = vec4((pNDC.x + 1.0) / 2.0 * (t_backBufferWidth - 1), (pNDC.y + 1.0) / 2.0 * (t_backBufferHeight - 1), z, inverseClipW);
-
-	return ps;
+float minInThree(float a, float b, float c) {
+	return a < b ? std::min(a, c) : std::min(b, c);
 }

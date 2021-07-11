@@ -1,6 +1,7 @@
 #pragma once
 
-#include "math.h"
+#include "./utils/math.h"
+#include "./utils/vertex.h"
 #include <vector>
 
 std::vector<Vertex> Clip(std::vector<Vertex> vertices);

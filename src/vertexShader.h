@@ -1,10 +1,12 @@
 #pragma once
 
-#include "math.h"
+#include "./utils/math.h"
+#include "./utils/vertex.h"
 
 class VertexShader {
 public:
 	VertexShader(mat4 _model, mat4 _view, mat4 _projection) : model(_model), view(_view), projection(_projection) {}
+
 	vec4 MVP_transform(vec3 p) {
 		vec4 pl = vec4(p, 1.0); // homogenous coordinates
 
@@ -17,12 +19,14 @@ public:
 
 		return pp;
 	}
+
 	vec3 getWorldPos(vec3 p) {
 		vec4 pl = vec4(p, 1.0);
 		vec4 pw = model * pl;
 
 		return vec3(pw.x, pw.y, pw.z);
 	}
+
 	Vertex vShader(vec3 p, vec3 n, vec2 t) {
 		vec4 pp = MVP_transform(p);
 		vec3 pw = getWorldPos(p);
@@ -30,9 +34,9 @@ public:
 
 		return Vertex(pp, n_world, t, pw);
 	}
+
 private:
 	mat4 model;
 	mat4 view;
 	mat4 projection;
-
 };

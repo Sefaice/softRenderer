@@ -1,18 +1,20 @@
 #pragma once
 
-#include "math.h"
-#include "texture.h"
+#include "./utils/math.h"
+#include "./utils/texture.h"
 
 class FragmentShader {
 public:
 	FragmentShader(Texture* _texture, vec3 _lightColor, vec3 _lightPos, vec3 _viewPos)
 		: texture(_texture), lightColor(_lightColor), lightPos(_lightPos), viewPos(_viewPos) {}
+
 	vec3 shading_texture(vec2 texCoords) {
 		vec3 texColor = texture->sampleTex(texCoords);
 		//vec3 texColor = texture->sampleTex_bilinear(texCoords);
 
 		return texColor;
 	}
+
 	vec3 shading_phong(vec3 normal, vec2 texCoords, vec3 worldPos) {
 		// sample in texture map
 		//vec3 texColor = texture->sampleTex(texCoords);
@@ -47,6 +49,7 @@ public:
 
 		return color;
 	}
+
 	vec3 shading_bump(vec3 normal, vec2 texCoords, vec3 worldPos) {
 		float kh = 3.2, kn = 1.6;
 
@@ -66,6 +69,7 @@ public:
 
 		return n;
 	}
+
 	vec3 shading_displacement(vec3 normal, vec2 texCoords, vec3 worldPos) {
 		float kh = 3.2, kn = 1.6;
 
@@ -87,6 +91,47 @@ public:
 		vec3 worldPos_dis = worldPos + kn * n * h(texCoords.x, texCoords.y);
 
 		return worldPos_dis;
+	}
+
+	vec3 shading_obj(vec3 normal, vec2 texCoords, vec3 worldPos, Texture* diffuseMap, Texture* specularMap, Texture* normalMap) {
+		
+		// TBN matrix, transform local normal to world space
+		vec3 ln = normalMap->sampleTex(texCoords);
+		float x2z2 = sqrt(normal.x * normal.x + normal.z * normal.z);
+		vec3 t = vec3(normal.x * normal.y / x2z2, -x2z2, normal.z * normal.y / x2z2);
+		vec3 b = cross(normal, t);
+		mat3 TBN = mat3(t.x, t.y, t.z, b.x, b.y, b.z, normal.x, normal.y, normal.z);
+		vec3 n = TBN * ln;
+		vec3 norm = normalize(n);
+		
+		vec3 diffuseColor = diffuseMap->sampleTex(texCoords);
+
+		// ambient
+		vec3 ambient = lightColor * diffuseColor;
+
+		// diffuse
+		//vec3 norm = normalize(normal);
+		vec3 lightDir = lightPos - worldPos;
+		lightDir = normalize(lightDir);
+		float diff = maxInTwo(dot(norm, lightDir), 0.0);
+		vec3 diffuse = lightColor * diff * diffuseColor;
+
+		// specular
+		vec3 viewDir = viewPos - worldPos;
+		viewDir = normalize(viewDir);
+		//// phong
+		//vec3 reflectDir = reflect(-lightDir, norm);
+		//reflectDir = normalize(reflectDir);
+		//float spec = pow(maxInTwo(dot(viewDir, reflectDir), 0.0), 16);
+		// blinn-phong
+		vec3 halfwayDir = lightDir + viewDir;
+		halfwayDir = normalize(halfwayDir);
+		float spec = pow(maxInTwo(dot(norm, halfwayDir), 0.0), 64);
+		vec3 specular = lightColor * spec * specularMap->sampleTex(texCoords);;
+
+		vec3 color = ambient + diffuse + specular;
+
+		return color;
 	}
 
 private:

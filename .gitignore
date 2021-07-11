@@ -3,6 +3,9 @@
 
 # files
 docs/
+res/
+includes/
+libs/
 
 # User-specific files
 *.suo

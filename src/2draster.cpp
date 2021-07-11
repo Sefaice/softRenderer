@@ -1,6 +1,6 @@
 #include "2draster.h"
 
-Raster2d::Raster2d(uint32_t* backBuffer, double* zBuffer, int backBufferWidth, int backBufferHeight)
+Raster2d::Raster2d(uint32_t* backBuffer, double* zBuffer, unsigned int backBufferWidth, unsigned int backBufferHeight)
 	: t_backBuffer(backBuffer), t_zBuffer(zBuffer), t_backBufferWidth(backBufferWidth), t_backBufferHeight(backBufferHeight) {}
 
 // draw single point
@@ -203,54 +203,4 @@ void Raster2d::DrawLineWu(float x0, float y0, float x1, float y1) {
 			intery = intery + gradient;
 		}
 	}
-}
-
-// check if a point is in triangle funcs
-// same side with line equation method
-bool isInTriangle1(int x, int y, vec3 p1, vec3 p2, vec3 p3) {
-	int lineParams[9];
-	lineParams[0] = p2.y - p1.y;
-	lineParams[1] = p1.x - p2.x;
-	lineParams[2] = p2.x * p1.y - p1.x * p2.y;
-	lineParams[3] = p3.y - p2.y;
-	lineParams[4] = p2.x - p3.x;
-	lineParams[5] = p3.x * p2.y - p2.x * p3.y;
-	lineParams[6] = p1.y - p3.y;
-	lineParams[7] = p3.x - p1.x;
-	lineParams[8] = p1.x * p3.y - p3.x * p1.y;
-
-	int param1 = lineParams[0] * x + lineParams[1] * y + lineParams[2];
-	int param2 = lineParams[3] * x + lineParams[4] * y + lineParams[5];
-	int param3 = lineParams[6] * x + lineParams[7] * y + lineParams[8];
-
-	if ((param1 >= 0 && param2 >= 0 && param3 >= 0) || (param1 <= 0 && param2 <= 0 && param3 <= 0)) return true;
-	return false;
-}
-
-// Barycentric method
-bool isInTriangle2(int x, int y, vec3 p1, vec3 p2, vec3 p3) {
-	float x0 = p3.x - p1.x, y0 = p3.y - p1.y;
-	float x1 = p2.x - p1.x, y1 = p2.y - p1.y;
-	float x2 = x - p1.x, y2 = y - p1.y;
-
-	float temp_00 = x0 * x0 + y0 * y0;
-	float temp_01 = x0 * x1 + y0 * y1;
-	float temp_02 = x0 * x2 + y0 * y2;
-	float temp_11 = x1 * x1 + y1 * y1;
-	float temp_12 = x1 * x2 + y1 * y2;
-
-	float u = float(temp_11 * temp_02 - temp_01 * temp_12) / (float)(temp_00 * temp_11 - temp_01 * temp_01);
-	float v = float(temp_00 * temp_12 - temp_01 * temp_02) / (float)(temp_00 * temp_11 - temp_01 * temp_01);
-
-	if ((u >= 0) && (v >= 0) && (u + v <= 1)) return true;
-	return false;
-}
-
-// draw triangle helper funcs
-float maxInThree(float a, float b, float c) {
-	return a > b ? std::max(a, c) : std::max(b, c);
-}
-
-float minInThree(float a, float b, float c) {
-	return a < b ? std::min(a, c) : std::min(b, c);
 }

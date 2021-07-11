@@ -16,6 +16,9 @@
     <Filter Include="源文件\subdivision">
       <UniqueIdentifier>{73bcf68e-819e-47a1-af27-774e2b5d73e7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="源文件\utils">
+      <UniqueIdentifier>{bd2f2903-1bdd-4527-bd09-ba92b38d5625}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\main.cpp">
@@ -33,11 +36,11 @@
     <ClCompile Include="..\..\src\subdivision\halfedge.cpp">
       <Filter>源文件\subdivision</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\render.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\math.h">
-      <Filter>源文件</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\clip.h">
       <Filter>源文件</Filter>
     </ClInclude>
@@ -47,23 +50,38 @@
     <ClInclude Include="..\..\src\3draster.h">
       <Filter>源文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\OBJ_Loader.h">
-      <Filter>源文件</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\stb_image.h">
-      <Filter>源文件</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\vertexShader.h">
       <Filter>源文件</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\fragmentShader.h">
       <Filter>源文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\texture.h">
-      <Filter>源文件</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\subdivision\halfedge.h">
       <Filter>源文件\subdivision</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\utils\math.h">
+      <Filter>源文件\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\utils\model.h">
+      <Filter>源文件\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\utils\OBJ_Loader.h">
+      <Filter>源文件\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\utils\stb_image.h">
+      <Filter>源文件\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\utils\texture.h">
+      <Filter>源文件\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\utils\vertex.h">
+      <Filter>源文件\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\utils\mesh.h">
+      <Filter>源文件\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\render.h">
+      <Filter>源文件</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

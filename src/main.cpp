@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "3draster.h"
+#include "render.h"
 
 #define WINDOW_WIDTH 1920
 #define WINDOW_HEIGHT 1080
@@ -251,68 +251,68 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 	return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-//int main() {
-//	InitBackbufferBitmap();
-//
-//	// init time
-//	LARGE_INTEGER time0;
-//	QueryPerformanceCounter(&time0);
-//	g_dtime0 = time0.QuadPart;
-//
-//	// init renderer
-//	InitRenderer(g_Backbuffer, g_Zbuffer, g_BackbufferWidth, g_BackbufferHeight);
-//
-//	while (true) {
-//		// time
-//		LARGE_INTEGER time1;
-//		QueryPerformanceCounter(&time1);
-//		static int s_FrameCount = 0;
-//		UpdateBackBuffer((time1.QuadPart - g_dtime0) / 10000000.0); // call drawing main func
-//		s_FrameCount++;
-//		LARGE_INTEGER time2;
-//		QueryPerformanceCounter(&time2);
-//
-//#if SSAA
-//		for (int i = 0; i < g_BitmapWidth; i++) {
-//			for (int j = 0; j < g_BitmapHeight; j++) {
-//				uint32_t r = 0, g = 0, b = 0;
-//				for (int k = 0; k < SSAA_LEVEL; k++) {
-//					for (int l = 0; l < SSAA_LEVEL; l++) {
-//						r += g_Backbuffer[(j * SSAA_LEVEL + l) * g_BackbufferWidth + i * SSAA_LEVEL + k] >> 16 & 0x000000FF;
-//						g += g_Backbuffer[(j * SSAA_LEVEL + l) * g_BackbufferWidth + i * SSAA_LEVEL + k] >> 8 & 0x000000FF;
-//						b += g_Backbuffer[(j * SSAA_LEVEL + l) * g_BackbufferWidth + i * SSAA_LEVEL + k] & 0x000000FF;
-//					}
-//				}
-//				r /= (SSAA_LEVEL * SSAA_LEVEL);
-//				g /= (SSAA_LEVEL * SSAA_LEVEL);
-//				b /= (SSAA_LEVEL * SSAA_LEVEL);
-//			
-//				g_BackBitmapbuffer[j * g_BitmapWidth + i] = b | (g << 8) | (r << 16);
-//			}
-//		}
-//#else
-//		memcpy(g_BackBitmapbuffer, g_Backbuffer, g_BackbufferWidth * g_BackbufferHeight * sizeof(g_Backbuffer[0]));
-//#endif
-//	}
-//
-//
-//	/*mat4 m(.5);
-//	m.print();
-//	vec4 a(0.5, 1.2, 2.3, 1.4);
-//	a.print();
-//	a = m * a;
-//	a.print();*/
-//
-//	/*mat4 t = mat4(1, -2, 3, 7, 5, -6, 7, 10, -9, 10, 11, 13, 13, 14, -15, 20);
-//	t.print();
-//	transpose(t).print();
-//
-//	inverse(t).print();*/
-//
-//	//vec3 v(1, 2, 3), n(4, 5, 6);
-//	//cross(n, v).print();
-//
-//	//system("pause");
-//
-//	return 0;
-//}
+int main() {
+	InitBackbufferBitmap();
+
+	// init time
+	LARGE_INTEGER time0;
+	QueryPerformanceCounter(&time0);
+	g_dtime0 = time0.QuadPart;
+
+	// init renderer
+	InitRenderer(g_Backbuffer, g_Zbuffer, g_BackbufferWidth, g_BackbufferHeight);
+
+	while (true) {
+		// time
+		LARGE_INTEGER time1;
+		QueryPerformanceCounter(&time1);
+		static int s_FrameCount = 0;
+		UpdateBackBuffer((time1.QuadPart - g_dtime0) / 10000000.0, cursorDown, curOffx, curOffy, scrollOff); // call drawing main func
+		s_FrameCount++;
+		LARGE_INTEGER time2;
+		QueryPerformanceCounter(&time2);
+
+#if SSAA
+		for (int i = 0; i < g_BitmapWidth; i++) {
+			for (int j = 0; j < g_BitmapHeight; j++) {
+				uint32_t r = 0, g = 0, b = 0;
+				for (int k = 0; k < SSAA_LEVEL; k++) {
+					for (int l = 0; l < SSAA_LEVEL; l++) {
+						r += g_Backbuffer[(j * SSAA_LEVEL + l) * g_BackbufferWidth + i * SSAA_LEVEL + k] >> 16 & 0x000000FF;
+						g += g_Backbuffer[(j * SSAA_LEVEL + l) * g_BackbufferWidth + i * SSAA_LEVEL + k] >> 8 & 0x000000FF;
+						b += g_Backbuffer[(j * SSAA_LEVEL + l) * g_BackbufferWidth + i * SSAA_LEVEL + k] & 0x000000FF;
+					}
+				}
+				r /= (SSAA_LEVEL * SSAA_LEVEL);
+				g /= (SSAA_LEVEL * SSAA_LEVEL);
+				b /= (SSAA_LEVEL * SSAA_LEVEL);
+			
+				g_BackBitmapbuffer[j * g_BitmapWidth + i] = b | (g << 8) | (r << 16);
+			}
+		}
+#else
+		memcpy(g_BackBitmapbuffer, g_Backbuffer, g_BackbufferWidth * g_BackbufferHeight * sizeof(g_Backbuffer[0]));
+#endif
+	}
+
+
+	/*mat4 m(.5);
+	m.print();
+	vec4 a(0.5, 1.2, 2.3, 1.4);
+	a.print();
+	a = m * a;
+	a.print();*/
+
+	/*mat4 t = mat4(1, -2, 3, 7, 5, -6, 7, 10, -9, 10, 11, 13, 13, 14, -15, 20);
+	t.print();
+	transpose(t).print();
+
+	inverse(t).print();*/
+
+	//vec3 v(1, 2, 3), n(4, 5, 6);
+	//cross(n, v).print();
+
+	//system("pause");
+
+	return 0;
+}

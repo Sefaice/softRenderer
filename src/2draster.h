@@ -1,12 +1,12 @@
 #pragma once
 
-#include "math.h"
+#include "./utils/math.h"
 
 // 2D rasterization
 
 class Raster2d {
 public:
-	Raster2d(uint32_t* t_backBuffer, double* t_zBuffer, int t_backBufferWidth, int t_backBufferHeight);
+	Raster2d(uint32_t* t_backBuffer, double* t_zBuffer, unsigned int t_backBufferWidth, unsigned int t_backBufferHeight);
 
 	void DrawPoint(vec2 p, double z, vec3 color);
 
@@ -20,19 +20,6 @@ public:
 private:
 	uint32_t* t_backBuffer;
 	double* t_zBuffer;
-	int t_backBufferWidth;
-	int t_backBufferHeight;
+	unsigned int t_backBufferWidth;
+	unsigned int t_backBufferHeight;
 };
-
-
-// 3D rasterization helpers
-
-// check if a point is in triangle funcs
-// same side with line equation method
-bool isInTriangle1(int x, int y, vec3 p1, vec3 p2, vec3 p3);
-// Barycentric method
-bool isInTriangle2(int x, int y, vec3 p1, vec3 p2, vec3 p3);
-
-// draw triangle helper funcs
-float maxInThree(float a, float b, float c);
-float minInThree(float a, float b, float c);

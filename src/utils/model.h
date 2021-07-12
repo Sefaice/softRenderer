@@ -41,7 +41,10 @@ private:
     void loadModel(std::string const& path) {
         // read file via ASSIMP
         Assimp::Importer importer;
+
         const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace); // aiProcess_FlipUVs
+        //const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_CalcTangentSpace);
+        
         // check for errors
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) { // if is Not Zero
             std::cout << "ERROR::ASSIMP:: " << importer.GetErrorString() << std::endl;
@@ -98,9 +101,9 @@ private:
                 vec.x = mesh->mTextureCoords[0][i].x;
                 vec.y = mesh->mTextureCoords[0][i].y;
                 vertex.texCoords = vec;
-            }
-            else
+            } else {
                 vertex.texCoords = vec2(0.0f, 0.0f);
+            }
             // tangent
             vector.x = mesh->mTangents[i].x;
             vector.y = mesh->mTangents[i].y;
@@ -132,22 +135,24 @@ private:
         // specular: texture_specularN
         // normal: texture_normalN
 
-        //// 1. diffuse maps
-        //std::vector<Texture*> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
-        //textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
-        //// 2. specular maps
-        //std::vector<Texture*> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
-        //textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
-        //// 3. normal maps
-        //std::vector<Texture*> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal");
-        //textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
-        //// 4. height maps
-        //std::vector<Texture*> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height");
-        //textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
+        // 1. diffuse maps
+        std::vector<Texture*> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
+        textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
+        // 2. specular maps
+        std::vector<Texture*> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
+        textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
+        // 3. normal maps
+        std::vector<Texture*> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal");
+        textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
+        // 4. height maps
+        std::vector<Texture*> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height");
+        textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
 
-        // load texture
-        std::vector<Texture*> maps = loadMaterialTextures_hardcoded();
-        textures.insert(textures.end(), maps.begin(), maps.end());
+        // load texture by hand
+        if (textures.size() == 0) {
+            std::vector<Texture*> maps = loadMaterialTextures_hardcoded();
+            textures.insert(textures.end(), maps.begin(), maps.end());
+        }
 
         // return a mesh object created from the extracted mesh data
         return Mesh(vertices, indices, textures);
@@ -189,7 +194,7 @@ private:
 
         std::vector<Texture*> textures;
 
-        std::string typeList[3] = { "diffuse", "specular", "normal" };
+        std::string typeList[3] = { "diffuse", "specular", "normal" }; // gun
 
         for (auto type : typeList) {
             std::string str = type + ".png";

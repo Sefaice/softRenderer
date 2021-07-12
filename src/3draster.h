@@ -12,15 +12,14 @@ public:
 
 	// 3D rasterization
 
-	void DrawTriangle3D(vec3 p1, vec3 p2, vec3 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t1, vec2 t2, vec2 t3, 
+	void DrawTriangle3D(Vertex v1, Vertex v2, Vertex v3,
 		VertexShader* vertexShader, FragmentShader* fragmentShader);
 
 	vec4 DV_transform(vec4 p);
 
 	// 2D rasterization
 
-	void DrawTriangle2D(vec4 p1, vec4 p2, vec4 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t1, vec2 t2, vec2 t3,
-		vec3 pw1, vec3 pw2, vec3 pw3, FragmentShader* fragmentShader);
+	void DrawTriangle2D(Vertex v1, Vertex v2, Vertex v3, FragmentShader* fragmentShader);
 
 private:
 	Raster2d* t_raster2d;

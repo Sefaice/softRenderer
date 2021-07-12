@@ -230,6 +230,14 @@ inline vec4 lerp(vec4 v1, vec4 v2, float t) {
 		v1.z * (1 - t) + v2.z * t, v1.w * (1 - t) + v2.w * t);
 }
 
+inline mat3 lerp(mat3 m1, mat3 m2, float t) {
+	mat3 m;
+	for (int i = 0; i < 3; i++)
+		for (int j = 0; j < 3; j++)
+			m.m[i][j] = m1.m[i][j] * (1 - t) + m2.m[i][j] * t;
+	return m;
+}
+
 inline float radians(float degree) {
 	return degree * M_PI / 180.0f;
 }

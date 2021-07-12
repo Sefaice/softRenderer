@@ -11,6 +11,7 @@ struct Vertex {
 	vec3 worldPos;
 	vec3 tangent;
 	vec3 bitangent;
+	mat3 TBN;
 
 	Vertex() : pos(vec4()), normal(vec3()), texCoords(vec2()), worldPos(vec3()) {}
 
@@ -29,12 +30,12 @@ struct Vertex {
 };
 
 inline Vertex lerp(Vertex v1, Vertex v2, float t) {
-	return Vertex(lerp(v1.pos, v2.pos, t), lerp(v1.normal, v2.normal, t), lerp(v1.texCoords, v2.texCoords, t),
-		lerp(v1.worldPos, v2.worldPos, t));
-}
+	Vertex v(lerp(v1.pos, v2.pos, t),
+		lerp(v1.normal, v2.normal, t), lerp(v1.texCoords, v2.texCoords, t), lerp(v1.worldPos, v2.worldPos, t));
 
-//struct Triangle {
-//	vec3 pos[3];
-//	vec2 texCoords[3];
-//	vec3 normal[3];
-//};
+	v.tangent = lerp(v1.tangent, v2.tangent, t);
+	v.bitangent = lerp(v1.bitangent, v2.bitangent, t);
+	v.TBN = lerp(v1.TBN, v2.TBN, t);
+
+	return v;
+}

@@ -19,9 +19,5 @@ softRenderer
   * (Blinn-)Phong lighting model
 * SSAA
 * catmull-clark subdivision
-
-TODOS:
-* back face culling(改顶点顺序为counter-clockwise?（会影响到2d raster）)
-* MSAA
-* obj loader implementation
-* 优化方法：Rendering Blocks of Pixels；提升帧率
+* model loading
+* normal mapping

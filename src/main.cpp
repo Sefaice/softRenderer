@@ -303,9 +303,9 @@ int main() {
 	a = m * a;
 	a.print();*/
 
-	/*mat4 t = mat4(1, -2, 3, 7, 5, -6, 7, 10, -9, 10, 11, 13, 13, 14, -15, 20);
+	mat3 t = mat3(1, 2, 3, 4, 5, 6, 7, 8, 9);
 	t.print();
-	transpose(t).print();
+	/*transpose(t).print();
 
 	inverse(t).print();*/
 

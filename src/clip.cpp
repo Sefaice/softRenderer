@@ -33,6 +33,7 @@ std::vector<Vertex> ClipPolygonComponent(std::vector<Vertex> vertices, int axis,
 			return result;
 	}
 	bool pInside = pComponent < pVertex.pos.w, cInside;
+	//bool pInside = pComponent <= pVertex.pos.w, cInside;
 
 	for (int i = 0; i < vertices.size(); i++) {
 		cVertex = vertices[i];

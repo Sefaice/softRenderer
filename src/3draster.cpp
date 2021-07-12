@@ -12,13 +12,13 @@ Raster3d::Raster3d(Raster2d* raster2d, float frustum_n, float frustum_f,
 	: t_raster2d(raster2d), t_frustum_n(frustum_n), t_frustum_f(frustum_f), 
 	t_backBufferWidth(backBufferWidth), t_backBufferHeight(backBufferHeight), t_polygon_mode(polygon_mode){}
 
-void Raster3d::DrawTriangle3D(vec3 p1, vec3 p2, vec3 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t1, vec2 t2, vec2 t3, 
+void Raster3d::DrawTriangle3D(Vertex v1, Vertex v2, Vertex v3, 
 	VertexShader* vertexShader, FragmentShader* fragmentShader) {
 
 	// vertex shader
-	Vertex v1 = vertexShader->vShader(p1, n1, t1);
-	Vertex v2 = vertexShader->vShader(p2, n2, t2);
-	Vertex v3 = vertexShader->vShader(p3, n3, t3);
+	v1 = vertexShader->vShader(v1);
+	v2 = vertexShader->vShader(v2);
+	v3 = vertexShader->vShader(v3);
 
 	// clip
 	std::vector<Vertex> vertices; vertices.push_back(v1); vertices.push_back(v2); vertices.push_back(v3);
@@ -27,18 +27,15 @@ void Raster3d::DrawTriangle3D(vec3 p1, vec3 p2, vec3 p3, vec3 n1, vec3 n2, vec3 
 	// tessellation
 	if (result.size() > 0) { // result not empty
 		Vertex initVertex = result[0];
-		vec4 p1s = DV_transform(initVertex.pos);
+		initVertex.pos = DV_transform(initVertex.pos);
 
 		for (int i = 1; i < result.size() - 1; i++) {
 			Vertex secVertex = result[i];
 			Vertex thiVertex = result[i + 1];
-			vec4 p2s = DV_transform(secVertex.pos);
-			vec4 p3s = DV_transform(thiVertex.pos);
+			secVertex.pos = DV_transform(secVertex.pos);
+			thiVertex.pos = DV_transform(thiVertex.pos);
 
-			DrawTriangle2D(p1s, p2s, p3s, initVertex.normal, secVertex.normal, thiVertex.normal,
-				initVertex.texCoords, secVertex.texCoords, thiVertex.texCoords,
-				initVertex.worldPos, secVertex.worldPos, thiVertex.worldPos,
-				fragmentShader);
+			DrawTriangle2D(initVertex, secVertex, thiVertex, fragmentShader);
 		}
 	}
 }
@@ -57,19 +54,22 @@ vec4 Raster3d::DV_transform(vec4 pp) {
 }
 
 // draw triangle by line equation / center
-void Raster3d::DrawTriangle2D(vec4 p1, vec4 p2, vec4 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t1, vec2 t2, vec2 t3,
-	vec3 pw1, vec3 pw2, vec3 pw3, FragmentShader* fragmentShader) {
+void Raster3d::DrawTriangle2D(Vertex v1, Vertex v2, Vertex v3, FragmentShader* fragmentShader) {
 	
 	if (this->t_polygon_mode) { // draw frame in polygon mode
-		t_raster2d->DrawLine(p1.x, p1.y, p2.x, p2.y);
-		t_raster2d->DrawLine(p2.x, p2.y, p3.x, p3.y);
-		t_raster2d->DrawLine(p3.x, p3.y, p1.x, p1.y);
+		t_raster2d->DrawLine(v1.pos.x, v1.pos.y, v2.pos.x, v2.pos.y);
+		t_raster2d->DrawLine(v2.pos.x, v2.pos.y, v3.pos.x, v3.pos.y);
+		t_raster2d->DrawLine(v3.pos.x, v3.pos.y, v1.pos.x, v1.pos.y);
 		/*raster2d->DrawLineWu(p1.x, p1.y, p2.x, p2.y);
 		raster2d->DrawLineWu(p2.x, p2.y, p3.x, p3.y);
 		raster2d->DrawLineWu(p3.x, p3.y, p1.x, p1.y);*/
 		return;
 	}
 	
+	vec4 p1 = v1.pos;
+	vec4 p2 = v2.pos;
+	vec4 p3 = v3.pos;
+
 	int maxx = maxInThree(p1.x, p2.x, p3.x), minx = minInThree(p1.x, p2.x, p3.x),
 		maxy = maxInThree(p1.y, p2.y, p3.y), miny = minInThree(p1.y, p2.y, p3.y);
 
@@ -122,30 +122,38 @@ void Raster3d::DrawTriangle2D(vec4 p1, vec4 p2, vec4 p3, vec3 n1, vec3 n2, vec3 
 				double inte_tmp2 = v * p2.w;
 				double inte_tmp3 = u * p3.w;
 				double z = 1 / (inte_tmp1 + inte_tmp2 + inte_tmp3); // interpolated view space depth for attributes interpolation
+				
 				// z interpolation
 				double bufferz = z * (p1.z * inte_tmp1 + p2.z * inte_tmp2 + p3.z * inte_tmp3); // depth in [N,F], for z-buffer storing
 				bufferz = t_frustum_f / (t_frustum_f - t_frustum_n) + t_frustum_f * t_frustum_n / (t_frustum_n - t_frustum_f) / bufferz; // interpolated z in [0,1]
+				
+				// other attributes perspective-correct interpolation
 				// normal
 				vec3 normal;
-				normal.x = z * (n1.x * inte_tmp1 + n2.x * inte_tmp2 + n3.x * inte_tmp3);
-				normal.y = z * (n1.y * inte_tmp1 + n2.y * inte_tmp2 + n3.y * inte_tmp3);
-				normal.z = z * (n1.z * inte_tmp1 + n2.z * inte_tmp2 + n3.z * inte_tmp3);
+				normal.x = z * (v1.normal.x * inte_tmp1 + v2.normal.x * inte_tmp2 + v3.normal.x * inte_tmp3);
+				normal.y = z * (v1.normal.y * inte_tmp1 + v2.normal.y * inte_tmp2 + v3.normal.y * inte_tmp3);
+				normal.z = z * (v1.normal.z * inte_tmp1 + v2.normal.z * inte_tmp2 + v3.normal.z * inte_tmp3);
 				// texture coords
 				vec2 texCoords;
-				texCoords.x = z * (t1.x * inte_tmp1 + t2.x * inte_tmp2 + t3.x * inte_tmp3);
-				texCoords.y = z * (t1.y * inte_tmp1 + t2.y * inte_tmp2 + t3.y * inte_tmp3);
+				texCoords.x = z * (v1.texCoords.x * inte_tmp1 + v2.texCoords.x * inte_tmp2 + v3.texCoords.x * inte_tmp3);
+				texCoords.y = z * (v1.texCoords.y * inte_tmp1 + v2.texCoords.y * inte_tmp2 + v3.texCoords.y * inte_tmp3);
 				// world pos
 				vec3 worldPos;
-				worldPos.x = z * (pw1.x * inte_tmp1 + pw2.x * inte_tmp2 + pw3.x * inte_tmp3);
-				worldPos.y = z * (pw1.y * inte_tmp1 + pw2.y * inte_tmp2 + pw3.y * inte_tmp3);
-				worldPos.z = z * (pw1.z * inte_tmp1 + pw2.z * inte_tmp2 + pw3.z * inte_tmp3);
+				worldPos.x = z * (v1.worldPos.x * inte_tmp1 + v2.worldPos.x * inte_tmp2 + v3.worldPos.x * inte_tmp3);
+				worldPos.y = z * (v1.worldPos.y * inte_tmp1 + v2.worldPos.y * inte_tmp2 + v3.worldPos.y * inte_tmp3);
+				worldPos.z = z * (v1.worldPos.z * inte_tmp1 + v2.worldPos.z * inte_tmp2 + v3.worldPos.z * inte_tmp3);
+				// TBN
+				mat3 TBN;
+				for (int i = 0; i < 3; i++)
+					for (int j = 0; j < 3; j++)
+						TBN.m[i][j] = z * (v1.TBN.m[i][j] * inte_tmp1 + v2.TBN.m[i][j] * inte_tmp2 + v3.TBN.m[i][j] * inte_tmp3);
 
 				// SHADING (in fragment shader)
 				//vec3 color = fragmentShader->shading_texture(texCoords);
 				//vec3 color = fragmentShader->shading_phong(normal, texCoords, worldPos);
 				//vec3 color = fragmentShader->shading_bump(normal, texCoords, worldPos);
 				//vec3 color = fragmentShader->shading_displacement(normal, texCoords, worldPos);
-				vec3 color = fragmentShader->shading_obj(normal, texCoords, worldPos);
+				vec3 color = fragmentShader->shading_obj(normal, texCoords, worldPos, TBN);
 
 				t_raster2d->DrawPoint(vec2(x, y), bufferz, color);
 			}

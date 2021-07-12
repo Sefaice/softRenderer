@@ -33,8 +33,7 @@ struct Mesh {
             Vertex v1 = vertices[*iter];
             Vertex v2 = vertices[*(iter+1)];
             Vertex v3 = vertices[*(iter+2)];
-            raster3d->DrawTriangle3D(v1.worldPos, v2.worldPos, v3.worldPos, v1.normal, v2.normal, v3.normal,
-                v1.texCoords, v2.texCoords, v3.texCoords, vertexShader, fragmentShader);
+            raster3d->DrawTriangle3D(v1, v2, v3, vertexShader, fragmentShader);
         }
     }
 };

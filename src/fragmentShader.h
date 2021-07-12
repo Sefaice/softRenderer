@@ -97,14 +97,10 @@ public:
 		return worldPos_dis;
 	}
 
-	vec3 shading_obj(vec3 normal, vec2 texCoords, vec3 worldPos) {
+	vec3 shading_obj(vec3 normal, vec2 texCoords, vec3 worldPos, mat3 TBN) {
 		
 		// TBN matrix, transform local normal to world space
 		vec3 ln = normalMap->sampleTex(texCoords);
-		float x2z2 = sqrt(normal.x * normal.x + normal.z * normal.z);
-		vec3 t = vec3(normal.x * normal.y / x2z2, -x2z2, normal.z * normal.y / x2z2);
-		vec3 b = cross(normal, t);
-		mat3 TBN = mat3(t.x, t.y, t.z, b.x, b.y, b.z, normal.x, normal.y, normal.z);
 		vec3 n = TBN * ln;
 		vec3 norm = normalize(n);
 		//// use normal vec
@@ -116,7 +112,6 @@ public:
 		vec3 ambient = lightColor * diffuseColor;
 
 		// diffuse
-		
 		vec3 lightDir = lightPos - worldPos;
 		lightDir = normalize(lightDir);
 		float diff = maxInTwo(dot(norm, lightDir), 0.0);
@@ -133,7 +128,7 @@ public:
 		vec3 halfwayDir = lightDir + viewDir;
 		halfwayDir = normalize(halfwayDir);
 		float spec = pow(maxInTwo(dot(norm, halfwayDir), 0.0), 64);
-		vec3 specular = lightColor * spec * specularMap->sampleTex(texCoords);;
+		vec3 specular = lightColor * spec * specularMap->sampleTex(texCoords);
 
 		vec3 color = ambient + diffuse + specular;
 

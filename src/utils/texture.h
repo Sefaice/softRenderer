@@ -8,13 +8,25 @@
 
 class Texture {
 public:
+	std::string path;
+	std::string type; // texture_diffuse, texture_specular, texture_normal, ...
 	int texWidth;
 	int texHeight;
 
-	Texture(const char* path) {
-		texData = stbi_load(path, &texWidth, &texHeight, &texNrChannels, 0);
+	Texture(std::string _path, std::string _type) {
+		path = _path;
+		type = _type;
+
+		//texData = stbi_load(path.c_str(), &texWidth, &texHeight, &texNrChannels, 0);
+		texData = stbi_load(path.c_str(), &texWidth, &texHeight, &texNrChannels, 3); // for "gun" model
 		//printf("%d, %d %d %d\n", texWidth, texHeight, texNrChannels, sizeof(texData) / sizeof(unsigned char));
+
+		if (!texData) {
+			std::cout << "Failed to load texture: " << path << std::endl;
+			throw std::invalid_argument("Failed to load texture");
+		}
 	}
+
 	vec3 sampleTex(vec2 texCoords) {
 		vec3 color;
 		if (texCoords.x >= 0 && texCoords.x <= 1 && texCoords.y >= 0 && texCoords.y <= 1) {
@@ -23,6 +35,7 @@ public:
 
 		return color;
 	}
+
 	vec3 sampleTex_bilinear(vec2 texCoords) {
 		vec3 color;
 		if (texCoords.x >= 0 && texCoords.x <= 1 && texCoords.y >= 0 && texCoords.y <= 1) {

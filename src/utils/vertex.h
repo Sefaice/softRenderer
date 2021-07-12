@@ -3,10 +3,14 @@
 #include "math.h"
 
 struct Vertex {
+	// used for MVP transformations
 	vec4 pos;
+	// attributes to be interpolated
 	vec3 normal;
 	vec2 texCoords;
 	vec3 worldPos;
+	vec3 tangent;
+	vec3 bitangent;
 
 	Vertex() : pos(vec4()), normal(vec3()), texCoords(vec2()), worldPos(vec3()) {}
 

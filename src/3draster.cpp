@@ -8,9 +8,9 @@
 #define POLYGON_MODE 0
 
 Raster3d::Raster3d(Raster2d* raster2d, float frustum_n, float frustum_f,
-	unsigned int backBufferWidth, unsigned int backBufferHeight) 
+	unsigned int backBufferWidth, unsigned int backBufferHeight, bool polygon_mode)
 	: t_raster2d(raster2d), t_frustum_n(frustum_n), t_frustum_f(frustum_f), 
-	t_backBufferWidth(backBufferWidth), t_backBufferHeight(backBufferHeight) {}
+	t_backBufferWidth(backBufferWidth), t_backBufferHeight(backBufferHeight), t_polygon_mode(polygon_mode){}
 
 void Raster3d::DrawTriangle3D(vec3 p1, vec3 p2, vec3 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t1, vec2 t2, vec2 t3, 
 	VertexShader* vertexShader, FragmentShader* fragmentShader) {
@@ -59,15 +59,17 @@ vec4 Raster3d::DV_transform(vec4 pp) {
 // draw triangle by line equation / center
 void Raster3d::DrawTriangle2D(vec4 p1, vec4 p2, vec4 p3, vec3 n1, vec3 n2, vec3 n3, vec2 t1, vec2 t2, vec2 t3,
 	vec3 pw1, vec3 pw2, vec3 pw3, FragmentShader* fragmentShader) {
-
-#if POLYGON_MODE // draw frame in polygon mode
-	raster2d->DrawLine(p1.x, p1.y, p2.x, p2.y);
-	raster2d->DrawLine(p2.x, p2.y, p3.x, p3.y);
-	raster2d->DrawLine(p3.x, p3.y, p1.x, p1.y);
-	/*raster2d->DrawLineWu(p1.x, p1.y, p2.x, p2.y);
-	raster2d->DrawLineWu(p2.x, p2.y, p3.x, p3.y);
-	raster2d->DrawLineWu(p3.x, p3.y, p1.x, p1.y);*/
-#else
+	
+	if (this->t_polygon_mode) { // draw frame in polygon mode
+		t_raster2d->DrawLine(p1.x, p1.y, p2.x, p2.y);
+		t_raster2d->DrawLine(p2.x, p2.y, p3.x, p3.y);
+		t_raster2d->DrawLine(p3.x, p3.y, p1.x, p1.y);
+		/*raster2d->DrawLineWu(p1.x, p1.y, p2.x, p2.y);
+		raster2d->DrawLineWu(p2.x, p2.y, p3.x, p3.y);
+		raster2d->DrawLineWu(p3.x, p3.y, p1.x, p1.y);*/
+		return;
+	}
+	
 	int maxx = maxInThree(p1.x, p2.x, p3.x), minx = minInThree(p1.x, p2.x, p3.x),
 		maxy = maxInThree(p1.y, p2.y, p3.y), miny = minInThree(p1.y, p2.y, p3.y);
 
@@ -140,10 +142,10 @@ void Raster3d::DrawTriangle2D(vec4 p1, vec4 p2, vec4 p3, vec3 n1, vec3 n2, vec3 
 
 				// SHADING (in fragment shader)
 				//vec3 color = fragmentShader->shading_texture(texCoords);
-				vec3 color = fragmentShader->shading_phong(normal, texCoords, worldPos);
+				//vec3 color = fragmentShader->shading_phong(normal, texCoords, worldPos);
 				//vec3 color = fragmentShader->shading_bump(normal, texCoords, worldPos);
 				//vec3 color = fragmentShader->shading_displacement(normal, texCoords, worldPos);
-				//vec3 color = fragmentShader->shading_obj(normal, texCoords, worldPos, diffuseMap, specularMap, normalMap);
+				vec3 color = fragmentShader->shading_obj(normal, texCoords, worldPos);
 
 				t_raster2d->DrawPoint(vec2(x, y), bufferz, color);
 			}
@@ -151,7 +153,6 @@ void Raster3d::DrawTriangle2D(vec4 p1, vec4 p2, vec4 p3, vec3 n1, vec3 n2, vec3 
 		u0 += a1;
 		v0 += b1;
 	}
-#endif
 }
 
 // check if a point is in triangle funcs

@@ -8,7 +8,7 @@
 class Raster3d {
 public:
 	Raster3d(Raster2d* raster2d, float frustum_n, float frustum_f,
-		unsigned int t_backBufferWidth, unsigned int t_backBufferHeight);
+		unsigned int t_backBufferWidth, unsigned int t_backBufferHeight, bool polygon_mode);
 
 	// 3D rasterization
 
@@ -28,6 +28,7 @@ private:
 	float t_frustum_f;
 	unsigned int t_backBufferWidth;
 	unsigned int t_backBufferHeight;
+	bool t_polygon_mode;
 };
 
 // 3D rasterization helpers

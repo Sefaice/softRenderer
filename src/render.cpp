@@ -6,6 +6,8 @@
 
 #include <time.h>
 
+bool POLYGON_MODE = false;
+
 uint32_t* t_backBuffer; // DONOT change while using, use as starting point
 double* t_zBuffer;
 int t_backBufferWidth, t_backBufferHeight;
@@ -17,12 +19,6 @@ Raster3d* raster3d;
 // shaders
 VertexShader* vertexShader;
 FragmentShader* fragmentShader;
-
-// texture
-Texture* texture;
-Texture* diffuseMap;
-Texture* specularMap;
-Texture* normalMap;
 
 // view frustum
 float frustum_n = .1f;
@@ -37,7 +33,7 @@ vec3 cameraBackword = vec3(0, 0, 1);
 
 // transform matrix
 mat4 rotation = mat4(1.0f);
-float scaleFx = 1.0f;
+float scaleFx = .2f;
 
 // light
 vec3 lightPos(.0f, 5.0f, 5.0f);
@@ -51,6 +47,7 @@ mat4 model_tmp; // use model for lighting temporarily
 //unsigned int subdivision_num = 3;
 
 //std::vector<Triangle*> modelTriangles;
+Model* myModelObj;
 
 void InitRenderer(uint32_t* backBuffer, double* zbuffer, int backBufferWidth, int backBufferHeight) {
 
@@ -59,18 +56,7 @@ void InitRenderer(uint32_t* backBuffer, double* zbuffer, int backBufferWidth, in
 	t_backBufferWidth = backBufferWidth;
 	t_backBufferHeight = backBufferHeight;
 	raster2d = new Raster2d(backBuffer, zbuffer, backBufferWidth, backBufferHeight);
-	raster3d = new Raster3d(raster2d, frustum_n, frustum_f, backBufferWidth, backBufferHeight);
-
-	// load texture
-	//texture = new Texture("../../src/res/models/backpack/diffuse.jpg");
-	diffuseMap = new Texture("../../src/res/models/backpack/diffuse.jpg");
-	specularMap = new Texture("../../src/res/models/backpack/specular.jpg");
-	normalMap = new Texture("../../src/res/models/backpack/normal.png");
-	/*diffuseMap = new Texture("../../src/res/models/Gun_LOW_forMaya/Gun_LOW_forMaya_default_color.png");
-	specularMap = new Texture("../../src/res/models/Gun_LOW_forMaya/Gun_LOW_forMaya_default_specular_color.png");
-	normalMap = new Texture("../../src/res/models/Gun_LOW_forMaya/Gun_LOW_forMaya_default_nmap.png");*/
-	/*diffuseMap = new Texture("../../src/res/models/machine_gun/diffuse.png");
-	normalMap = new Texture("../../src/res/models/machine_gun/normal.png");*/
+	raster3d = new Raster3d(raster2d, frustum_n, frustum_f, backBufferWidth, backBufferHeight, POLYGON_MODE);
 
 	// load objects
 	//// obj-loader
@@ -99,7 +85,7 @@ void InitRenderer(uint32_t* backBuffer, double* zbuffer, int backBufferWidth, in
 	//	}
 	//}
 	// assimp
-	Model backpack("../../src/res/models/backpack/backpack.obj");
+	myModelObj = new Model("../../src/res/models/gun/gun.obj");
 
 	//// init subdivision cube
 	//float vertices[] = {
@@ -191,7 +177,7 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 
 	// shaders
 	vertexShader = new VertexShader(model, view, projection);
-	fragmentShader = new FragmentShader(texture, lightColor, lightPos, viewPos);
+	fragmentShader = new FragmentShader(lightColor, lightPos, viewPos);
 
 	//// draw point
 	//raster2d->DrawPoint(vec2(500, 100), bufferz, vec3(0, 0, 1));
@@ -215,19 +201,19 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 	/*DrawTriangle3D(vec3(-3, 2, 0), vec3(2, -1, 0), vec3(-3, -1, 0.0),
 		vec3(1.0, 0, 0), vec3(0, 1, 0), vec3(0, 0, 1),
 		vec2(0.0, 1.0), vec2(1.0, 0.0), vec2(0.0, 0.0));*/
-		/*DrawTriangle3D(vec3(-1, 2, 1), vec3(1.5, 1, -1.0), vec3(1, -1, -1.5),
-			vec3(1, 0, 0), vec3(0, 1, 0), vec3(0, 0, 1));
-		DrawTriangle3D(vec3(-3, -1, 0), vec3(0, -1, 0.0), vec3(-5, -5, -3),
-			vec3(1.0, 0, 0), vec3(0, 1, 0), vec3(0, 0, 1));*/
+	/*DrawTriangle3D(vec3(-1, 2, 1), vec3(1.5, 1, -1.0), vec3(1, -1, -1.5),
+		vec3(1, 0, 0), vec3(0, 1, 0), vec3(0, 0, 1));
+	DrawTriangle3D(vec3(-3, -1, 0), vec3(0, -1, 0.0), vec3(-5, -5, -3),
+		vec3(1.0, 0, 0), vec3(0, 1, 0), vec3(0, 0, 1));*/
 
-			//// draw object
-			//for (int i = 0; i < modelTriangles.size(); i++) {
-			//	DrawTriangle3D(modelTriangles[i]->pos[0], modelTriangles[i]->pos[1], modelTriangles[i]->pos[2], 
-			//		modelTriangles[i]->normal[0], modelTriangles[i]->normal[1], modelTriangles[i]->normal[2],
-			//		modelTriangles[i]->texCoords[0], modelTriangles[i]->texCoords[1], modelTriangles[i]->texCoords[2]);
-			//}
-			//
-	backpack->Draw(raster3d, vertexShader, fragmentShader);
+	//// draw object
+	//for (int i = 0; i < modelTriangles.size(); i++) {
+	//	DrawTriangle3D(modelTriangles[i]->pos[0], modelTriangles[i]->pos[1], modelTriangles[i]->pos[2], 
+	//		modelTriangles[i]->normal[0], modelTriangles[i]->normal[1], modelTriangles[i]->normal[2],
+	//		modelTriangles[i]->texCoords[0], modelTriangles[i]->texCoords[1], modelTriangles[i]->texCoords[2]);
+	//}
+	//
+	myModelObj->Draw(raster3d, vertexShader, fragmentShader);
 }
 
 /* draw cube from position&normal vector

@@ -20,8 +20,6 @@ public:
 	}
 
 	vec3 shading_phong(vec3 normal, vec2 texCoords, vec3 worldPos) {
-		// sample in texture map
-		//vec3 texColor = texture->sampleTex(texCoords);
 		vec3 texColor = vec3(0.5f, 0.6f, 0.7f);
 
 		// ambient
@@ -99,12 +97,12 @@ public:
 
 	vec3 shading_obj(vec3 normal, vec2 texCoords, vec3 worldPos, mat3 TBN) {
 		
-		// TBN matrix, transform local normal to world space
-		vec3 ln = normalMap->sampleTex(texCoords);
-		vec3 n = TBN * ln;
-		vec3 norm = normalize(n);
-		//// use normal vec
-		//vec3 norm = normalize(normal);
+		//// TBN matrix, transform local normal to world space
+		//vec3 ln = normalMap->sampleTex(texCoords);
+		//vec3 n = TBN * ln;
+		//vec3 norm = normalize(n);
+		// use normal vec
+		vec3 norm = normalize(normal);
 		
 		vec3 diffuseColor = diffuseMap->sampleTex(texCoords);
 

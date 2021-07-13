@@ -19,11 +19,12 @@ public:
 
 		//texData = stbi_load(path.c_str(), &texWidth, &texHeight, &texNrChannels, 0);
 		texData = stbi_load(path.c_str(), &texWidth, &texHeight, &texNrChannels, 3); // for "gun" model
+		//std::cout << path << std::endl;
 		//printf("%d, %d %d %d\n", texWidth, texHeight, texNrChannels, sizeof(texData) / sizeof(unsigned char));
 
 		if (!texData) {
 			std::cout << "Failed to load texture: " << path << std::endl;
-			throw std::invalid_argument("Failed to load texture");
+			//throw std::invalid_argument("Failed to load texture");
 		}
 	}
 

@@ -70,6 +70,11 @@ void Raster3d::DrawTriangle2D(Vertex v1, Vertex v2, Vertex v3, FragmentShader* f
 	vec4 p2 = v2.pos;
 	vec4 p3 = v3.pos;
 
+	// back face culling
+	if (p1.x * p2.y - p2.x * p1.y + p2.x * p3.y - p3.x * p2.y + p3.x * p1.y - p1.x * p3.y < 0) { // back face
+		return;
+	}
+
 	int maxx = maxInThree(p1.x, p2.x, p3.x), minx = minInThree(p1.x, p2.x, p3.x),
 		maxy = maxInThree(p1.y, p2.y, p3.y), miny = minInThree(p1.y, p2.y, p3.y);
 
@@ -150,10 +155,10 @@ void Raster3d::DrawTriangle2D(Vertex v1, Vertex v2, Vertex v3, FragmentShader* f
 
 				// SHADING (in fragment shader)
 				//vec3 color = fragmentShader->shading_texture(texCoords);
-				//vec3 color = fragmentShader->shading_phong(normal, texCoords, worldPos);
+				vec3 color = fragmentShader->shading_phong(normal, texCoords, worldPos);
 				//vec3 color = fragmentShader->shading_bump(normal, texCoords, worldPos);
 				//vec3 color = fragmentShader->shading_displacement(normal, texCoords, worldPos);
-				vec3 color = fragmentShader->shading_obj(normal, texCoords, worldPos, TBN);
+				//vec3 color = fragmentShader->shading_obj(normal, texCoords, worldPos, TBN);
 
 				t_raster2d->DrawPoint(vec2(x, y), bufferz, color);
 			}

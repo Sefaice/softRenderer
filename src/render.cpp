@@ -33,7 +33,7 @@ vec3 cameraBackword = vec3(0, 0, 1);
 
 // transform matrix
 mat4 rotation = mat4(1.0f);
-float scaleFx = 1.0f;
+float scaleFx = 2.0f;
 
 // light
 vec3 lightPos(.0f, 5.0f, 5.0f);
@@ -85,7 +85,9 @@ void InitRenderer(uint32_t* backBuffer, double* zbuffer, int backBufferWidth, in
 	//}
 	// assimp
 	//myModelObj = new Model("../../src/res/models/backpack/backpack.obj");
-	myModelObj = new Model("../../src/res/models/gun/gun.obj");
+	//myModelObj = new Model("../../src/res/models/gun/gun.obj");
+	//myModelObj = new Model("../../src/res/models/can/can.obj");
+	//myModelObj = new Model("../../src/res/models/jerrycan/jerrycan.obj");
 
 	//// init subdivision cube
 	//float vertices[] = {
@@ -195,6 +197,12 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 	//raster2d->DrawLineWu(100, 100, 800, 700);
 
 	//// draw cube
+	DrawCube(raster3d, vertexShader, fragmentShader);
+	//model = mat4(1.0);
+	//model = translate(model, vec3(0.0, -1.5, 0.0));
+	//model = rotation * model;
+	//model = scale(model, 0.3 + scaleFx + scrollOff / 10.0f);
+	//vertexShader->model = model;
 	//DrawCube(raster3d, vertexShader, fragmentShader);
 
 	// test z
@@ -213,59 +221,70 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 	//		modelTriangles[i]->texCoords[0], modelTriangles[i]->texCoords[1], modelTriangles[i]->texCoords[2]);
 	//}
 	//
-	myModelObj->Draw(raster3d, vertexShader, fragmentShader);
+	//myModelObj->Draw(raster3d, vertexShader, fragmentShader);
 }
 
-///* draw cube from position&normal vector
-//*/
-//void DrawCube(Raster3d* raster3d, VertexShader* vShader, FragmentShader* fShader) {
-////void DrawCube(std::vector<std::pair<vec3, vec3>> verticesVector) {
-//
-//	/*for (unsigned int i = 0; i < verticesVector.size(); i += 3) {
-//		DrawTriangle3D(verticesVector[i].first, verticesVector[i + 1].first, verticesVector[i + 2].first,
-//			verticesVector[i].second, verticesVector[i + 1].second, verticesVector[i + 2].second,
-//			vec2(0, 0), vec2(0, 0), vec2(0, 0));
-//	}*/
-//
-//	raster3d->DrawTriangle3D(vec3(-1.0, 1.0, 1.0), vec3(1.0, -1.0, 1.0), vec3(-1.0, -1.0, 1.0),
-//		vec3(0, 0, 1), vec3(0, 0, 1), vec3(0, 0, 1), vec2(0, 1), vec2(1, 0), vec2(0, 0),
-//		vShader, fShader);  // front
-//	raster3d->DrawTriangle3D(vec3(-1.0, 1.0, 1.0), vec3(1.0, 1.0, 1.0), vec3(1.0, -1.0, 1.0),
-//		vec3(0, 0, 1), vec3(0, 0, 1), vec3(0, 0, 1), vec2(0, 1), vec2(1, 1), vec2(1, 0),
-//		vShader, fShader);
-//
-//	raster3d->DrawTriangle3D(vec3(1.0, 1.0, 1.0), vec3(1.0, -1.0, -1.0), vec3(1.0, -1.0, 1.0),
-//		vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0),
-//		vShader, fShader);  // right
-//	raster3d->DrawTriangle3D(vec3(1.0, 1.0, 1.0), vec3(1.0, 1.0, -1.0), vec3(1.0, -1.0, -1.0),
-//		vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec3(1.0, 0, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0),
-//		vShader, fShader);
-//
-//	raster3d->DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(1.0, 1.0, 1.0), vec3(-1.0, 1.0, 1.0),
-//		vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0),
-//		vShader, fShader);  // top
-//	raster3d->DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(1.0, 1.0, -1.0), vec3(1.0, 1.0, 1.0),
-//		vec3(0, 1, 0), vec3(0, 1, 0), vec3(0, 1, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0),
-//		vShader, fShader);
-//
-//	raster3d->DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(-1.0, -1.0, 1.0), vec3(-1.0, -1.0, -1.0),
-//		vec3(-1.0, 0, 0), vec3(-1.0, 0, 0), vec3(-1.0, 0, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0),
-//		vShader, fShader);  // left
-//	raster3d->DrawTriangle3D(vec3(-1.0, 1.0, -1.0), vec3(-1.0, 1.0, 1.0), vec3(-1.0, -1.0, 1.0),
-//		vec3(-1.0, 0, 0), vec3(-1.0, 0, 0), vec3(-1.0, 0, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0),
-//		vShader, fShader);
-//
-//	raster3d->DrawTriangle3D(vec3(1.0, 1.0, -1.0), vec3(-1.0, -1.0, -1.0), vec3(1.0, -1.0, -1.0),
-//		vec3(0, 0, -1), vec3(0, 0, -1), vec3(0, 0, -1), vec2(0, 1), vec2(1, 0), vec2(0, 0),
-//		vShader, fShader);  // back
-//	raster3d->DrawTriangle3D(vec3(1.0, 1.0, -1.0), vec3(-1.0, 1.0, -1.0), vec3(-1.0, -1.0, -1.0),
-//		vec3(0, 0, -1), vec3(0, 0, -1), vec3(0, 0, -1), vec2(0, 1), vec2(1, 1), vec2(1, 0),
-//		vShader, fShader);
-//
-//	raster3d->DrawTriangle3D(vec3(-1.0, -1.0, 1.0), vec3(1.0, -1.0, -1.0), vec3(-1.0, -1.0, -1.0),
-//		vec3(0, -1, 0), vec3(0, -1, 0), vec3(0, -1, 0), vec2(0, 1), vec2(1, 0), vec2(0, 0),
-//		vShader, fShader);  // bottom
-//	raster3d->DrawTriangle3D(vec3(-1.0, -1.0, 1.0), vec3(1.0, -1.0, 1.0), vec3(1.0, -1.0, -1.0),
-//		vec3(0, -1, 0), vec3(0, -1, 0), vec3(0, -1, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0),
-//		vShader, fShader);
-//}
+void DrawCube(Raster3d* raster3d, VertexShader* vShader, FragmentShader* fShader) {
+//void DrawCube(std::vector<std::pair<vec3, vec3>> verticesVector) {
+
+	/*for (unsigned int i = 0; i < verticesVector.size(); i += 3) {
+		DrawTriangle3D(verticesVector[i].first, verticesVector[i + 1].first, verticesVector[i + 2].first,
+			verticesVector[i].second, verticesVector[i + 1].second, verticesVector[i + 2].second,
+			vec2(0, 0), vec2(0, 0), vec2(0, 0));
+	}*/
+
+	// counter-clockwise
+	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(0, 0, 1), vec2(0, 1), vec3(-1.0, 1.0, 1.0)),
+		Vertex(vec4(), vec3(0, 0, 1), vec2(0, 0), vec3(-1.0, -1.0, 1.0)),
+		Vertex(vec4(), vec3(0, 0, 1), vec2(1, 0), vec3(1.0, -1.0, 1.0)),
+		vShader, fShader); // front
+	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(0, 0, 1), vec2(0, 1), vec3(-1.0, 1.0, 1.0)),
+		Vertex(vec4(), vec3(0, 0, 1), vec2(1, 0), vec3(1.0, -1.0, 1.0)),
+		Vertex(vec4(), vec3(0, 0, 1), vec2(1, 1), vec3(1.0, 1.0, 1.0)),
+		vShader, fShader);
+
+	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(1.0, 0, 0), vec2(0, 1), vec3(1.0, 1.0, 1.0)),
+		Vertex(vec4(), vec3(1.0, 0, 0), vec2(0, 0), vec3(1.0, -1.0, 1.0)),
+		Vertex(vec4(), vec3(1.0, 0, 0), vec2(1, 0), vec3(1.0, -1.0, -1.0)),
+		vShader, fShader); // right
+	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(1.0, 0, 0), vec2(0, 1), vec3(1.0, 1.0, 1.0)),
+		Vertex(vec4(), vec3(1.0, 0, 0), vec2(1, 0), vec3(1.0, -1.0, -1.0)),
+		Vertex(vec4(), vec3(1.0, 0, 0), vec2(1, 1), vec3(1.0, 1.0, -1.0)),
+		vShader, fShader);
+
+	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(0, 1, 0), vec2(0, 1), vec3(-1.0, 1.0, -1.0)),
+		Vertex(vec4(), vec3(0, 1, 0), vec2(0, 0), vec3(-1.0, 1.0, 1.0)),
+		Vertex(vec4(), vec3(0, 1, 0), vec2(1, 0), vec3(1.0, 1.0, 1.0)),
+		vShader, fShader); // top
+	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(0, 1, 0), vec2(0, 1), vec3(1.0, 1.0, 1.0)),
+		Vertex(vec4(), vec3(0, 1, 0), vec2(1, 0), vec3(1.0, 1.0, -1.0)),
+		Vertex(vec4(), vec3(0, 1, 0), vec2(1, 1), vec3(-1.0, 1.0, -1.0)),
+		vShader, fShader);
+
+	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(-1.0, 0, 0), vec2(0, 1), vec3(-1.0, 1.0, -1.0)),
+		Vertex(vec4(), vec3(-1.0, 0, 0), vec2(0, 0), vec3(-1.0, -1.0, -1.0)),
+		Vertex(vec4(), vec3(-1.0, 0, 0), vec2(1, 0), vec3(-1.0, -1.0, 1.0)),
+		vShader, fShader); // left
+	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(-1.0, 0, 0), vec2(0, 1), vec3(-1.0, 1.0, -1.0)),
+		Vertex(vec4(), vec3(-1.0, 0, 0), vec2(1, 0), vec3(-1.0, -1.0, 1.0)),
+		Vertex(vec4(), vec3(-1.0, 0, 0), vec2(1, 1), vec3(-1.0, 1.0, 1.0)),
+		vShader, fShader);
+
+	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(0, 0, -1), vec2(0, 1), vec3(1.0, 1.0, -1.0)),
+		Vertex(vec4(), vec3(0, 0, -1), vec2(0, 0), vec3(1.0, -1.0, -1.0)),
+		Vertex(vec4(), vec3(0, 0, -1), vec2(1, 0), vec3(-1.0, -1.0, -1.0)),
+		vShader, fShader); // back
+	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(0, 0, -1), vec2(0, 1), vec3(1.0, 1.0, -1.0)),
+		Vertex(vec4(), vec3(0, 0, -1), vec2(1, 0), vec3(-1.0, -1.0, -1.0)),
+		Vertex(vec4(), vec3(0, 0, -1), vec2(1, 1), vec3(-1.0, 1.0, -1.0)),
+		vShader, fShader);
+
+	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(0, -1, 0), vec2(0, 1), vec3(-1.0, -1.0, 1.0)),
+		Vertex(vec4(), vec3(0, -1, 0), vec2(0, 0), vec3(-1.0, -1.0, -1.0)),
+		Vertex(vec4(), vec3(0, -1, 0), vec2(1, 0), vec3(1.0, -1.0, -1.0)),
+		vShader, fShader); // bottom
+	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(0, -1, 0), vec2(0, 1), vec3(-1.0, -1.0, 1.0)),
+		Vertex(vec4(), vec3(0, -1, 0), vec2(1, 0), vec3(1.0, -1.0, -1.0)),
+		Vertex(vec4(), vec3(0, -1, 0), vec2(1, 1), vec3(1.0, -1.0, 1.0)),
+		vShader, fShader);
+}

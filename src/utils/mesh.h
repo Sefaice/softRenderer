@@ -18,6 +18,7 @@ struct Mesh {
 
         // bind texture
         for (Texture* texture : textures) {
+            //std::cout << "mesh draw: " <<texture->type << " " << texture->path << std::endl;
             if (texture->type == "texture_diffuse") {
                 fragmentShader->diffuseMap = texture;
             }
@@ -26,6 +27,9 @@ struct Mesh {
             }
             else if (texture->type == "texture_normal") {
                 fragmentShader->normalMap = texture;
+            }
+            else {
+                std::cout << "height map and others not implemented yet." << std::endl;
             }
         }
 

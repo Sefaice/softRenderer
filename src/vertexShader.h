@@ -5,6 +5,10 @@
 
 class VertexShader {
 public:
+	mat4 model;
+	mat4 view;
+	mat4 projection;
+
 	VertexShader(mat4 _model, mat4 _view, mat4 _projection) : model(_model), view(_view), projection(_projection) {}
 
 	vec4 MVP_transform(vec3 p) {
@@ -55,9 +59,4 @@ public:
 
 		return v;
 	}
-
-private:
-	mat4 model;
-	mat4 view;
-	mat4 projection;
 };

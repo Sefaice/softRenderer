@@ -86,5 +86,8 @@
     <ClInclude Include="..\..\src\shaders\vertexShader.h">
       <Filter>源文件\shaders</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\utils\camera.h">
+      <Filter>源文件\utils</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

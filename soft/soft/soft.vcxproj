@@ -34,6 +34,7 @@
     <ClInclude Include="..\..\src\shaders\fragmentShader.h" />
     <ClInclude Include="..\..\src\shaders\vertexShader.h" />
     <ClInclude Include="..\..\src\subdivision\halfedge.h" />
+    <ClInclude Include="..\..\src\utils\camera.h" />
     <ClInclude Include="..\..\src\utils\math.h" />
     <ClInclude Include="..\..\src\utils\mesh.h" />
     <ClInclude Include="..\..\src\utils\model.h" />

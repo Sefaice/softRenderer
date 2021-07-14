@@ -3,12 +3,13 @@
 //#include "./utils/OBJ_Loader.h"
 #include "./utils/model.h"
 #include "./utils/texture.h"
+#include "./utils/camera.h"
 
 #include <time.h>
 
 bool POLYGON_MODE = false;
 
-uint32_t* t_backBuffer; // DONOT change while using, use as starting point
+uint32_t* t_backBuffer; // DO NOT change while using, use as starting point
 double* t_zBuffer;
 int t_backBufferWidth, t_backBufferHeight;
 double t_dtime;
@@ -31,9 +32,10 @@ float frustum_f = 100.0f;
 // camera
 vec3 viewPos(0, 0, 15);
 vec3 cameraPos = viewPos;
-vec3 cameraRight = vec3(1, 0, 0);
+// vec3 cameraRight = vec3(1, 0, 0);
 vec3 cameraUp = vec3(0, 1, 0);
 vec3 cameraBackword = vec3(0, 0, 1);
+Camera* camera;
 
 // transform matrix
 mat4 rotation = mat4(1.0f);
@@ -63,6 +65,8 @@ void InitRenderer(uint32_t* backBuffer, double* zbuffer, int backBufferWidth, in
 	t_backBufferHeight = backBufferHeight;
 	raster2d = new Raster2d(backBuffer, zbuffer, backBufferWidth, backBufferHeight);
 	raster3d = new Raster3d(raster2d, frustum_n, frustum_f, backBufferWidth, backBufferHeight, POLYGON_MODE);
+
+	camera = new Camera(cameraPos, cameraUp, -cameraBackword);
 
 	vertexShader = new PhongVertexShader();
 	fragmentShader = new PhongFragmentShader();
@@ -155,11 +159,14 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 	}*/
 	std::fill(t_zBuffer, t_zBuffer + t_backBufferWidth * t_backBufferHeight, 1.0f);
 
+	//// input movement
+	camera->ProcessMouseMovement(curOffx, curOffy);
+
 	// init mats and shaders
 	// model
 	mat4 model = mat4(1.0);
-	//model = translate(model, vec3(6.0f * float(sin(t_dtime / 5.0f)), 0.0, 0.0));
-	model = translate(model, vec3(0.0, -0.1, 0.0));
+	//model = translate(model, vec3(6.0f * float(sin(t_dtime)), 0.0, 0.0));
+	//model = translate(model, vec3(0.0, -0.1, 0.0));
 	//model = rotate(model, radians(30.0), vec3(1, 1, 0));
 	//model = rotate(model, t_dtime / 4.0, vec3(1, 1, 1));
 	//model = rotate(model, sin(t_dtime), vec3(-1, 0, 0));
@@ -170,16 +177,7 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 	}
 	model = rotation * model;
 	model = scale(model, scaleFx + scrollOff / 10.0f);
-	// view
-	mat4 view1 = mat4(cameraRight.x, cameraUp.x, cameraBackword.x, 0,
-		cameraRight.y, cameraUp.y, cameraBackword.y, 0,
-		cameraRight.z, cameraUp.z, cameraBackword.z, 0,
-		0, 0, 0, 1);
-	mat4 view2 = mat4(1, 0, 0, 0,
-		0, 1, 0, 0,
-		0, 0, 1, 0,
-		-cameraPos.x, -cameraPos.y, -cameraPos.z, 1);
-	mat4 view = view1 * view2;
+	mat4 view = camera->GetViewMatrix();
 	// projection
 	float fov = 45.0f;
 	float ar = (float)t_backBufferWidth / (float)t_backBufferHeight;
@@ -213,10 +211,10 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 
 	// draw cube
 	// shaders
-	/*fragmentShader->lightColor = lightColor;
+	fragmentShader->lightColor = lightColor;
 	fragmentShader->lightPos = lightPos;
 	fragmentShader->viewPos = viewPos;
-	DrawCube(raster3d, vertexShader, fragmentShader);*/
+	DrawCube(raster3d, vertexShader, fragmentShader);
 	/*model = mat4(1.0);
 	model = translate(model, vec3(0.0, -1.5, 0.0));
 	model = rotation * model;

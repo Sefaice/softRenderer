@@ -69,3 +69,70 @@ private:
 		return color;
 	}
 };
+
+class CubeMapTexture {
+public:
+	std::vector<Texture*> faces; // +x, -x, +y, -y, +z, -z
+
+	CubeMapTexture(std::string path) {
+		faces.push_back(new Texture(path + "/right.jpg", "texture_cubemap"));
+		faces.push_back(new Texture(path + "/left.jpg", "texture_cubemap"));
+		faces.push_back(new Texture(path + "/top.jpg", "texture_cubemap"));
+		faces.push_back(new Texture(path + "/bottom.jpg", "texture_cubemap"));
+		faces.push_back(new Texture(path + "/front.jpg", "texture_cubemap"));
+		faces.push_back(new Texture(path + "/back.jpg", "texture_cubemap"));
+	}
+
+	vec3 sampleCubeMap(vec3 texCoords) {
+		float absx = abs(texCoords.x);
+		float absy = abs(texCoords.y);
+		float absz = abs(texCoords.z);
+
+		float ma, uc, vc, u, v;
+		unsigned int faceInd;
+		if (absx > absy && absx > absz) {
+			ma = absx;
+			if (texCoords.x > 0) { // +x
+				faceInd = 0;
+				uc = -texCoords.z;
+				vc = -texCoords.y;
+			}
+			else { // -x
+				faceInd = 1;
+				uc = texCoords.z;
+				vc = -texCoords.y;
+			}
+		}
+		else if (absy > absz) {
+			ma = absy;
+			if (texCoords.y > 0) { // +y
+				faceInd = 2;
+				uc = texCoords.x;
+				vc = texCoords.z;
+			}
+			else { // -y
+				faceInd = 3;
+				uc = texCoords.x;
+				vc = -texCoords.z;
+			}
+		}
+		else {
+			ma = absz;
+			if (texCoords.z > 0) { // +z
+				faceInd = 4;
+				uc = texCoords.x;
+				vc = -texCoords.y;
+			}
+			else { // -z
+				faceInd = 5;
+				uc = -texCoords.x;
+				vc = -texCoords.y;
+			}
+		}
+
+		u = 0.5f * (uc / ma + 1.0f); 
+		v = 0.5f * (vc / ma + 1.0f);
+
+		return faces[faceInd]->sampleTex(vec2(u, v));
+	}
+};

@@ -19,6 +19,10 @@ Raster3d* raster3d;
 // shaders
 VertexShader* vertexShader;
 FragmentShader* fragmentShader;
+ObjFragmentShader* objFragmentShader;
+
+CubeMapVertexShader* cubeMapVertexShader;
+CubeMapFragmentShader* cubeMapFragmentShader;
 
 // view frustum
 float frustum_n = .1f;
@@ -48,6 +52,9 @@ mat4 model_tmp; // use model for lighting temporarily
 
 Model* myModelObj;
 
+// skybox
+CubeMapTexture* cubeMapTexture;
+
 void InitRenderer(uint32_t* backBuffer, double* zbuffer, int backBufferWidth, int backBufferHeight) {
 
 	t_backBuffer = backBuffer;
@@ -56,6 +63,12 @@ void InitRenderer(uint32_t* backBuffer, double* zbuffer, int backBufferWidth, in
 	t_backBufferHeight = backBufferHeight;
 	raster2d = new Raster2d(backBuffer, zbuffer, backBufferWidth, backBufferHeight);
 	raster3d = new Raster3d(raster2d, frustum_n, frustum_f, backBufferWidth, backBufferHeight, POLYGON_MODE);
+
+	vertexShader = new PhongVertexShader();
+	fragmentShader = new PhongFragmentShader();
+	objFragmentShader = new ObjFragmentShader();
+	cubeMapVertexShader = new CubeMapVertexShader();
+	cubeMapFragmentShader = new CubeMapFragmentShader();
 
 	// load objects
 	//// obj-loader
@@ -125,6 +138,8 @@ void InitRenderer(uint32_t* backBuffer, double* zbuffer, int backBufferWidth, in
 	//	global_h.subdivide();
 	//	global_h.to_mesh(verticesVector, verticesVector_quad);
 	//}
+
+	cubeMapTexture = new CubeMapTexture("../../src/res/skyboxes/lake");
 }
 
 void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, float scrollOff) {
@@ -138,7 +153,7 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 			t_zBuffer[j * t_backBufferWidth + i] = 1.0;
 		}
 	}*/
-	std::fill(t_zBuffer, t_zBuffer + t_backBufferWidth * t_backBufferHeight, 1.0);
+	std::fill(t_zBuffer, t_zBuffer + t_backBufferWidth * t_backBufferHeight, 1.0f);
 
 	// init mats and shaders
 	// model
@@ -177,9 +192,9 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 		(r + l) / (r - l), (t + b) / (t - b), -(frustum_f + frustum_n) / (frustum_f - frustum_n), -1,
 		0, 0, -2 * frustum_f * frustum_n / (frustum_f - frustum_n), 0);
 
-	// shaders
-	vertexShader = new VertexShader(model, view, projection);
-	fragmentShader = new FragmentShader(lightColor, lightPos, viewPos);
+	vertexShader->model = model;
+	vertexShader->view = view;
+	vertexShader->projection = projection;
 
 	//// draw point
 	//raster2d->DrawPoint(vec2(500, 100), bufferz, vec3(0, 0, 1));
@@ -196,14 +211,18 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 	//// draw line by wu's algorithm
 	//raster2d->DrawLineWu(100, 100, 800, 700);
 
-	//// draw cube
-	DrawCube(raster3d, vertexShader, fragmentShader);
-	//model = mat4(1.0);
-	//model = translate(model, vec3(0.0, -1.5, 0.0));
-	//model = rotation * model;
-	//model = scale(model, 0.3 + scaleFx + scrollOff / 10.0f);
-	//vertexShader->model = model;
-	//DrawCube(raster3d, vertexShader, fragmentShader);
+	// draw cube
+	// shaders
+	/*fragmentShader->lightColor = lightColor;
+	fragmentShader->lightPos = lightPos;
+	fragmentShader->viewPos = viewPos;
+	DrawCube(raster3d, vertexShader, fragmentShader);*/
+	/*model = mat4(1.0);
+	model = translate(model, vec3(0.0, -1.5, 0.0));
+	model = rotation * model;
+	model = scale(model, 0.3 + scaleFx + scrollOff / 10.0f);
+	vertexShader->model = model;
+	DrawCube(raster3d, vertexShader, fragmentShader);*/
 
 	// test z
 	/*DrawTriangle3D(vec3(-3, 2, 0), vec3(2, -1, 0), vec3(-3, -1, 0.0),
@@ -220,8 +239,18 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 	//		modelTriangles[i]->normal[0], modelTriangles[i]->normal[1], modelTriangles[i]->normal[2],
 	//		modelTriangles[i]->texCoords[0], modelTriangles[i]->texCoords[1], modelTriangles[i]->texCoords[2]);
 	//}
-	//
-	//myModelObj->Draw(raster3d, vertexShader, fragmentShader);
+	////
+	//objFragmentShader->lightColor = lightColor;
+	//objFragmentShader->lightPos = lightPos;
+	//objFragmentShader->viewPos = viewPos;
+	//myModelObj->Draw(raster3d, vertexShader, objFragmentShader);
+
+	// draw skybox
+	view = matrix4(matrix3(view));
+	cubeMapVertexShader->view = view;
+	cubeMapVertexShader->projection = projection;
+	cubeMapFragmentShader->cubeMapTexture = cubeMapTexture;
+	DrawSkyBox(raster3d, cubeMapVertexShader, cubeMapFragmentShader);
 }
 
 void DrawCube(Raster3d* raster3d, VertexShader* vShader, FragmentShader* fShader) {
@@ -286,5 +315,64 @@ void DrawCube(Raster3d* raster3d, VertexShader* vShader, FragmentShader* fShader
 	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(0, -1, 0), vec2(0, 1), vec3(-1.0, -1.0, 1.0)),
 		Vertex(vec4(), vec3(0, -1, 0), vec2(1, 0), vec3(1.0, -1.0, -1.0)),
 		Vertex(vec4(), vec3(0, -1, 0), vec2(1, 1), vec3(1.0, -1.0, 1.0)),
+		vShader, fShader);
+}
+
+
+// since we "see" inside the skybox, use clockwise to prevent face culling
+void DrawSkyBox(Raster3d* raster3d, CubeMapVertexShader* vShader, CubeMapFragmentShader* fShader) {
+
+	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(), vec2(), vec3(-1.0, 1.0, 1.0)),
+		Vertex(vec4(), vec3(), vec2(), vec3(1.0, -1.0, 1.0)),
+		Vertex(vec4(), vec3(), vec2(), vec3(-1.0, -1.0, 1.0)),
+		vShader, fShader); // front
+	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(), vec2(), vec3(-1.0, 1.0, 1.0)),
+		Vertex(vec4(), vec3(), vec2(), vec3(1.0, 1.0, 1.0)),
+		Vertex(vec4(), vec3(), vec2(), vec3(1.0, -1.0, 1.0)),
+		vShader, fShader);
+
+	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(), vec2(), vec3(1.0, 1.0, 1.0)),
+		Vertex(vec4(), vec3(), vec2(), vec3(1.0, -1.0, -1.0)),
+		Vertex(vec4(), vec3(), vec2(), vec3(1.0, -1.0, 1.0)),
+		vShader, fShader); // right
+	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(), vec2(), vec3(1.0, 1.0, 1.0)),
+		Vertex(vec4(), vec3(), vec2(), vec3(1.0, 1.0, -1.0)),
+		Vertex(vec4(), vec3(), vec2(), vec3(1.0, -1.0, -1.0)),
+		vShader, fShader);
+
+	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(), vec2(), vec3(-1.0, 1.0, -1.0)),
+		Vertex(vec4(), vec3(), vec2(), vec3(1.0, 1.0, 1.0)),
+		Vertex(vec4(), vec3(), vec2(), vec3(-1.0, 1.0, 1.0)),
+		vShader, fShader); // top
+	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(), vec2(), vec3(1.0, 1.0, 1.0)),
+		Vertex(vec4(), vec3(), vec2(), vec3(-1.0, 1.0, -1.0)),
+		Vertex(vec4(), vec3(), vec2(), vec3(1.0, 1.0, -1.0)),
+		vShader, fShader);
+
+	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(), vec2(), vec3(-1.0, 1.0, -1.0)),
+		Vertex(vec4(), vec3(), vec2(), vec3(-1.0, -1.0, 1.0)),
+		Vertex(vec4(), vec3(), vec2(), vec3(-1.0, -1.0, -1.0)),
+		vShader, fShader); // left
+	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(), vec2(), vec3(-1.0, 1.0, -1.0)),
+		Vertex(vec4(), vec3(), vec2(), vec3(-1.0, 1.0, 1.0)),
+		Vertex(vec4(), vec3(), vec2(), vec3(-1.0, -1.0, 1.0)),
+		vShader, fShader);
+
+	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(0, 0, -1), vec2(0, 1), vec3(1.0, 1.0, -1.0)),
+		Vertex(vec4(), vec3(), vec2(), vec3(-1.0, -1.0, -1.0)),
+		Vertex(vec4(), vec3(), vec2(), vec3(1.0, -1.0, -1.0)),
+		vShader, fShader); // back
+	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(), vec2(), vec3(1.0, 1.0, -1.0)),
+		Vertex(vec4(), vec3(), vec2(), vec3(-1.0, 1.0, -1.0)),
+		Vertex(vec4(), vec3(), vec2(), vec3(-1.0, -1.0, -1.0)),
+		vShader, fShader);
+
+	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(), vec2(), vec3(-1.0, -1.0, 1.0)),
+		Vertex(vec4(), vec3(), vec2(), vec3(1.0, -1.0, -1.0)),
+		Vertex(vec4(), vec3(), vec2(), vec3(-1.0, -1.0, -1.0)),
+		vShader, fShader); // bottom
+	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(), vec2(), vec3(-1.0, -1.0, 1.0)),
+		Vertex(vec4(), vec3(), vec2(), vec3(1.0, -1.0, 1.0)),
+		Vertex(vec4(), vec3(), vec2(), vec3(1.0, -1.0, -1.0)),
 		vShader, fShader);
 }

@@ -5,8 +5,6 @@
 
 #include <iostream>
 
-#define POLYGON_MODE 0
-
 Raster3d::Raster3d(Raster2d* raster2d, float frustum_n, float frustum_f,
 	unsigned int backBufferWidth, unsigned int backBufferHeight, bool polygon_mode)
 	: t_raster2d(raster2d), t_frustum_n(frustum_n), t_frustum_f(frustum_f), 
@@ -16,9 +14,9 @@ void Raster3d::DrawTriangle3D(Vertex v1, Vertex v2, Vertex v3,
 	VertexShader* vertexShader, FragmentShader* fragmentShader) {
 
 	// vertex shader
-	v1 = vertexShader->vShader(v1);
-	v2 = vertexShader->vShader(v2);
-	v3 = vertexShader->vShader(v3);
+	v1 = vertexShader->shading(v1);
+	v2 = vertexShader->shading(v2);
+	v3 = vertexShader->shading(v3);
 
 	// clip
 	std::vector<Vertex> vertices; vertices.push_back(v1); vertices.push_back(v2); vertices.push_back(v3);
@@ -152,13 +150,28 @@ void Raster3d::DrawTriangle2D(Vertex v1, Vertex v2, Vertex v3, FragmentShader* f
 				for (int i = 0; i < 3; i++)
 					for (int j = 0; j < 3; j++)
 						TBN.m[i][j] = z * (v1.TBN.m[i][j] * inte_tmp1 + v2.TBN.m[i][j] * inte_tmp2 + v3.TBN.m[i][j] * inte_tmp3);
+				// cubemap
+				vec3 cubeMapTexCoords;
+				cubeMapTexCoords.x = z * (v1.cubeMapTexCoords.x * inte_tmp1 + v2.cubeMapTexCoords.x * inte_tmp2 + v3.cubeMapTexCoords.x * inte_tmp3);
+				cubeMapTexCoords.y = z * (v1.cubeMapTexCoords.y * inte_tmp1 + v2.cubeMapTexCoords.y * inte_tmp2 + v3.cubeMapTexCoords.y * inte_tmp3);
+				cubeMapTexCoords.z = z * (v1.cubeMapTexCoords.z * inte_tmp1 + v2.cubeMapTexCoords.z * inte_tmp2 + v3.cubeMapTexCoords.z * inte_tmp3);
 
 				// SHADING (in fragment shader)
 				//vec3 color = fragmentShader->shading_texture(texCoords);
-				vec3 color = fragmentShader->shading_phong(normal, texCoords, worldPos);
+				//vec3 color = fragmentShader->shading_phong(normal, texCoords, worldPos);
 				//vec3 color = fragmentShader->shading_bump(normal, texCoords, worldPos);
 				//vec3 color = fragmentShader->shading_displacement(normal, texCoords, worldPos);
 				//vec3 color = fragmentShader->shading_obj(normal, texCoords, worldPos, TBN);
+				Vertex fv;
+				fv.normal = normal;
+				fv.texCoords = texCoords;
+				fv.worldPos = worldPos;
+				fv.TBN = TBN;
+				fv.cubeMapTexCoords = cubeMapTexCoords;
+				vec3 color = fragmentShader->shading(fv);
+				
+				// cubemap
+				bufferz = 0.9f;
 
 				t_raster2d->DrawPoint(vec2(x, y), bufferz, color);
 			}
@@ -207,13 +220,4 @@ bool isInTriangle2(int x, int y, vec3 p1, vec3 p2, vec3 p3) {
 
 	if ((u >= 0) && (v >= 0) && (u + v <= 1)) return true;
 	return false;
-}
-
-// draw triangle helper funcs
-float maxInThree(float a, float b, float c) {
-	return a > b ? std::max(a, c) : std::max(b, c);
-}
-
-float minInThree(float a, float b, float c) {
-	return a < b ? std::min(a, c) : std::min(b, c);
 }

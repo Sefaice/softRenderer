@@ -19,6 +19,9 @@
     <Filter Include="源文件\utils">
       <UniqueIdentifier>{bd2f2903-1bdd-4527-bd09-ba92b38d5625}</UniqueIdentifier>
     </Filter>
+    <Filter Include="源文件\shaders">
+      <UniqueIdentifier>{0131f000-d0ef-42ee-ae6a-f56194a18db7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\main.cpp">
@@ -50,12 +53,6 @@
     <ClInclude Include="..\..\src\3draster.h">
       <Filter>源文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\vertexShader.h">
-      <Filter>源文件</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\fragmentShader.h">
-      <Filter>源文件</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\subdivision\halfedge.h">
       <Filter>源文件\subdivision</Filter>
     </ClInclude>
@@ -82,6 +79,12 @@
     </ClInclude>
     <ClInclude Include="..\..\src\render.h">
       <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\shaders\fragmentShader.h">
+      <Filter>源文件\shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\shaders\vertexShader.h">
+      <Filter>源文件\shaders</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

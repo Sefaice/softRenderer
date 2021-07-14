@@ -2,8 +2,8 @@
 
 #include "2draster.h"
 #include "clip.h"
-#include "vertexShader.h"
-#include "fragmentShader.h"
+#include "./shaders/vertexShader.h"
+#include "./shaders/fragmentShader.h"
 
 class Raster3d {
 public:

@@ -252,6 +252,25 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 }
 
 int main() {
+
+	/*mat4 m(.5);
+	m.print();
+	vec4 a(0.5, 1.2, 2.3, 1.4);
+	a.print();
+	a = m * a;
+	a.print();*/
+
+	/*mat4 t = mat4(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+	t.print();
+	matrix3(t).print();
+	matrix4(matrix3(t)).print();*/
+	/*transpose(t).print();
+
+	inverse(t).print();*/
+
+	//vec3 v(1, 2, 3), n(4, 5, 6);
+	//cross(n, v).print();
+
 	InitBackbufferBitmap();
 
 	// init time
@@ -296,21 +315,6 @@ int main() {
 	}
 
 
-	/*mat4 m(.5);
-	m.print();
-	vec4 a(0.5, 1.2, 2.3, 1.4);
-	a.print();
-	a = m * a;
-	a.print();*/
-
-	mat3 t = mat3(1, 2, 3, 4, 5, 6, 7, 8, 9);
-	t.print();
-	/*transpose(t).print();
-
-	inverse(t).print();*/
-
-	//vec3 v(1, 2, 3), n(4, 5, 6);
-	//cross(n, v).print();
 
 	//system("pause");
 

@@ -14,7 +14,7 @@ struct Mesh {
         this->textures = textures;
     }
 
-    void Draw(Raster3d* raster3d, VertexShader* vertexShader, FragmentShader* fragmentShader) {
+    void Draw(Raster3d* raster3d, VertexShader* vertexShader, ObjFragmentShader* fragmentShader) {
 
         // bind texture
         for (Texture* texture : textures) {

@@ -195,6 +195,21 @@ inline float maxInTwo(float a, float b) {
 	return a > b ? a : b;
 }
 
+//inline float maxInThree(float a, float b, float c) {
+//	return a > b ? std::max(a, c) : std::max(b, c);
+//}
+//
+//inline float minInThree(float a, float b, float c) {
+//	return a < b ? std::min(a, c) : std::min(b, c);
+//}
+inline float maxInThree(float a, float b, float c) {
+	return a > b ? (a > c ? a : c) : (b > c ? b : c);
+}
+
+inline float minInThree(float a, float b, float c) {
+	return a < b ? (a < c ? a : c) : (b < c ? b : c);
+}
+
 inline vec3 normalize(vec3& v) {
 	float length = v.length();
 	if (length == 0)
@@ -242,13 +257,28 @@ inline float radians(float degree) {
 	return degree * M_PI / 180.0f;
 }
 
+inline vec3 vector3(const vec4 v) {
+	return vec3(v.x, v.y, v.z);
+}
+
+inline vec4 vector4(const vec3 v) {
+	return vec4(v.x, v.y, v.z, 0);
+}
+
 inline mat3 matrix3(const mat4 m) {
 	mat3 r;
-	for (int i = 0; i < 3; i++) {
-		for (int j = 0; j < 3; j++) {
+	for (int i = 0; i < 3; i++)
+		for (int j = 0; j < 3; j++)
 			r.m[i][j] = m.m[i][j];
-		}
-	}
+
+	return r;
+}
+
+inline mat4 matrix4(const mat3 m) {
+	mat4 r(1.0f); // position 4,4 should be 1 !
+	for (int i = 0; i < 3; i++)
+		for (int j = 0; j < 3; j++)
+			r.m[i][j] = m.m[i][j];
 
 	return r;
 }

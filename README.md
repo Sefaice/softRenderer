@@ -21,3 +21,4 @@ softRenderer
 * catmull-clark subdivision
 * model loading
 * normal mapping
+* skybox

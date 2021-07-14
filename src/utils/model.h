@@ -30,7 +30,7 @@ public:
     }
 
     // draws the model, and thus all its meshes
-    void Draw(Raster3d* raster3d, VertexShader * vertexShader, FragmentShader* fragmentShader) {
+    void Draw(Raster3d* raster3d, VertexShader* vertexShader, ObjFragmentShader* fragmentShader) {
         for (unsigned int i = 0; i < meshes.size(); i++)
             meshes[i].Draw(raster3d, vertexShader, fragmentShader);
     }

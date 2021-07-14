@@ -32,8 +32,7 @@ std::vector<Vertex> ClipPolygonComponent(std::vector<Vertex> vertices, int axis,
 			std::cout << "clip axis index error" << std::endl;
 			return result;
 	}
-	bool pInside = pComponent < pVertex.pos.w, cInside;
-	//bool pInside = pComponent <= pVertex.pos.w, cInside;
+	bool pInside = pComponent <= pVertex.pos.w, cInside;
 
 	for (int i = 0; i < vertices.size(); i++) {
 		cVertex = vertices[i];
@@ -51,7 +50,7 @@ std::vector<Vertex> ClipPolygonComponent(std::vector<Vertex> vertices, int axis,
 			std::cout << "clip axis index error" << std::endl;
 			return result;
 		}
-		cInside = cComponent < cVertex.pos.w;
+		cInside = cComponent <= cVertex.pos.w;
 
 		if (pInside ^ cInside) { // xOR
 			float t = (pVertex.pos.w - pComponent) / ((pVertex.pos.w - pComponent) - (cVertex.pos.w - cComponent));

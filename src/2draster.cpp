@@ -34,8 +34,12 @@ void Raster2d::DrawPoint(vec2 p, double z, vec3 color) {
 		uint32_t r = (std::min)((uint32_t)((std::max)(color.x, 0.0f) * 255.9f), 255u); // convert float to 32 bit uint
 		uint32_t g = (std::min)((uint32_t)((std::max)(color.y, 0.0f) * 255.9f), 255u);
 		uint32_t b = (std::min)((uint32_t)((std::max)(color.z, 0.0f) * 255.9f), 255u);
-
+		
 		*frameBuffer = b | (g << 8) | (r << 16);
+
+		// alpha
+		//float a = .5f;
+		//*frameBuffer += ((uint32_t)(a*b)) | (((uint32_t)(a*g)) << 8) | (((uint32_t)(a*r)) << 16);
 	}
 }
 

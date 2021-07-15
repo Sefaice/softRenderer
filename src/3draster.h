@@ -25,6 +25,8 @@ private:
 	Raster2d* t_raster2d;
 	float t_frustum_n;
 	float t_frustum_f;
+	float t_frustum_nf1; // for DrawTriangle3D rasterization
+	float t_frustum_nf2;
 	unsigned int t_backBufferWidth;
 	unsigned int t_backBufferHeight;
 	bool t_polygon_mode;

@@ -6,6 +6,7 @@
 
 class Raster2d {
 public:
+
 	Raster2d(uint32_t* t_backBuffer, double* t_zBuffer, unsigned int t_backBufferWidth, unsigned int t_backBufferHeight);
 
 	void DrawPoint(vec2 p, double z, vec3 color);

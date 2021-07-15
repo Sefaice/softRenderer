@@ -11,7 +11,7 @@ struct Vertex {
 	vec3 worldPos; // v shader input as localPos, then as worldpos attribute
 	vec3 tangent;
 	vec3 bitangent;
-	mat3 TBN;
+	//mat3 TBN;
 	vec3 cubeMapTexCoords;
 
 	Vertex() : pos(vec4()), normal(vec3()), texCoords(vec2()), worldPos(vec3()) {}
@@ -36,7 +36,7 @@ inline Vertex lerp(Vertex v1, Vertex v2, float t) {
 
 	v.tangent = lerp(v1.tangent, v2.tangent, t);
 	v.bitangent = lerp(v1.bitangent, v2.bitangent, t);
-	v.TBN = lerp(v1.TBN, v2.TBN, t);
+	//v.TBN = lerp(v1.TBN, v2.TBN, t);
 	v.cubeMapTexCoords = lerp(v1.cubeMapTexCoords, v2.cubeMapTexCoords, t);
 
 	return v;

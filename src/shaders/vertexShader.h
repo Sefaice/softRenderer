@@ -50,14 +50,13 @@ public:
 		B = normalize(B);
 		vec3 N = vector3(model * vec4(v.normal, 0.0));
 		N = normalize(N);
-		// in frag shader use TBN
-		mat3 TBN = mat3(T.x, T.y, T.z, B.x, B.y, B.z, N.x, N.y, N.z);
-		v.TBN = TBN;
+		//// in frag shader use TBN
+		//mat3 TBN = mat3(T.x, T.y, T.z, B.x, B.y, B.z, N.x, N.y, N.z);
+		//v.TBN = TBN;
 
 		v.pos = MVP_transform(v.worldPos);
 		v.worldPos = getWorldPos(v.worldPos);
 		v.normal = matrix3(transpose(inverse(model))) * v.normal;
-
 		return v;
 	}
 };

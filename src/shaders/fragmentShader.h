@@ -124,12 +124,13 @@ public:
 		vec3 normal = v.normal;
 		vec2 texCoords = v.texCoords;
 		vec3 worldPos = v.worldPos; 
-		mat3 TBN = v.TBN;
-
+		
+		//mat3 TBN = v.TBN;
 		//// TBN matrix, transform local normal to world space
 		//vec3 ln = normalMap->sampleTex(texCoords);
 		//vec3 n = TBN * ln;
 		//vec3 norm = normalize(n);
+
 		// use normal vec
 		vec3 norm = normalize(normal);
 

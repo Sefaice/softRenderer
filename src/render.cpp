@@ -39,7 +39,7 @@ Camera* camera;
 
 // transform matrix
 mat4 rotation = mat4(1.0f);
-float scaleFx = 2.0f;
+float scaleFx = 1.0f;
 
 // light
 vec3 lightPos(.0f, 5.0f, 5.0f);
@@ -102,7 +102,7 @@ void InitRenderer(uint32_t* backBuffer, double* zbuffer, int backBufferWidth, in
 	//}
 	// assimp
 	//myModelObj = new Model("../../src/res/models/backpack/backpack.obj");
-	//myModelObj = new Model("../../src/res/models/gun/gun.obj");
+	myModelObj = new Model("../../src/res/models/gun/gun.obj");
 	//myModelObj = new Model("../../src/res/models/can/can.obj");
 	//myModelObj = new Model("../../src/res/models/jerrycan/jerrycan.obj");
 
@@ -160,7 +160,7 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 	std::fill(t_zBuffer, t_zBuffer + t_backBufferWidth * t_backBufferHeight, 1.0f);
 
 	//// input movement
-	camera->ProcessMouseMovement(curOffx, curOffy);
+	//camera->ProcessMouseMovement(curOffx, curOffy);
 
 	// init mats and shaders
 	// model
@@ -210,11 +210,11 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 	//raster2d->DrawLineWu(100, 100, 800, 700);
 
 	// draw cube
-	// shaders
-	fragmentShader->lightColor = lightColor;
-	fragmentShader->lightPos = lightPos;
-	fragmentShader->viewPos = viewPos;
-	DrawCube(raster3d, vertexShader, fragmentShader);
+	//// shaders
+	//fragmentShader->lightColor = lightColor;
+	//fragmentShader->lightPos = lightPos;
+	//fragmentShader->viewPos = viewPos;
+	//DrawCube(raster3d, vertexShader, fragmentShader);
 	/*model = mat4(1.0);
 	model = translate(model, vec3(0.0, -1.5, 0.0));
 	model = rotation * model;
@@ -232,23 +232,17 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 		vec3(1.0, 0, 0), vec3(0, 1, 0), vec3(0, 0, 1));*/
 
 	//// draw object
-	//for (int i = 0; i < modelTriangles.size(); i++) {
-	//	DrawTriangle3D(modelTriangles[i]->pos[0], modelTriangles[i]->pos[1], modelTriangles[i]->pos[2], 
-	//		modelTriangles[i]->normal[0], modelTriangles[i]->normal[1], modelTriangles[i]->normal[2],
-	//		modelTriangles[i]->texCoords[0], modelTriangles[i]->texCoords[1], modelTriangles[i]->texCoords[2]);
-	//}
-	////
-	//objFragmentShader->lightColor = lightColor;
-	//objFragmentShader->lightPos = lightPos;
-	//objFragmentShader->viewPos = viewPos;
-	//myModelObj->Draw(raster3d, vertexShader, objFragmentShader);
+	objFragmentShader->lightColor = lightColor;
+	objFragmentShader->lightPos = lightPos;
+	objFragmentShader->viewPos = viewPos;
+	myModelObj->Draw(raster3d, vertexShader, objFragmentShader);
 
-	// draw skybox
-	view = matrix4(matrix3(view));
-	cubeMapVertexShader->view = view;
-	cubeMapVertexShader->projection = projection;
-	cubeMapFragmentShader->cubeMapTexture = cubeMapTexture;
-	DrawSkyBox(raster3d, cubeMapVertexShader, cubeMapFragmentShader);
+	//// draw skybox
+	//view = matrix4(matrix3(view));
+	//cubeMapVertexShader->view = view;
+	//cubeMapVertexShader->projection = projection;
+	//cubeMapFragmentShader->cubeMapTexture = cubeMapTexture;
+	//DrawSkyBox(raster3d, cubeMapVertexShader, cubeMapFragmentShader);
 }
 
 void DrawCube(Raster3d* raster3d, VertexShader* vShader, FragmentShader* fShader) {

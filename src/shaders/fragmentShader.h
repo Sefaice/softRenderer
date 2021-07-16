@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../utils/math.h"
-#include ".//utils/texture.h"
+#include "./utils/texture.h"
 
 class FragmentShader {
 public:
@@ -9,7 +9,7 @@ public:
 	vec3 lightPos;
 	vec3 viewPos;
 
-	virtual vec3 shading(Vertex v) {
+	virtual vec3 shading(FS_in fin) {
 		std::cout << "error! virtual f shading" << std::endl;
 		return vec3();
 	}
@@ -73,12 +73,15 @@ protected:
 };
 
 class PhongFragmentShader : public FragmentShader {
+	// VS_out:
+	//     vec3 normal
+	//     vec3 worldPos
+	//     vec2 texCoords
 public:
-
-	vec3 shading(Vertex v) {
-		vec3 normal = v.normal;
-		vec2 texCoords = v.texCoords;
-		vec3 worldPos = v.worldPos;
+	vec3 shading(FS_in fin) {
+		vec3 normal = fin.in_vec3[0];
+		vec2 texCoords = fin.in_vec2[0];
+		vec3 worldPos = fin.in_vec3[1];
 
 		vec3 texColor = vec3(0.5f, 0.6f, 0.7f);
 
@@ -115,24 +118,29 @@ public:
 };
 
 class ObjFragmentShader : public FragmentShader {
+	// VS_out:
+	//     vec3 normal
+	//     vec3 worldPos
+	//     vec2 texCoords
+	//     mat3 TBN
 public:
 	Texture* diffuseMap;
 	Texture* specularMap;
 	Texture* normalMap;
 
-	vec3 shading(Vertex v) {
-		vec3 normal = v.normal;
-		vec2 texCoords = v.texCoords;
-		vec3 worldPos = v.worldPos; 
-		
-		//mat3 TBN = v.TBN;
-		//// TBN matrix, transform local normal to world space
-		//vec3 ln = normalMap->sampleTex(texCoords);
-		//vec3 n = TBN * ln;
-		//vec3 norm = normalize(n);
+	vec3 shading(FS_in fin) {
+		vec3 normal = fin.in_vec3[0];
+		vec2 texCoords = fin.in_vec2[0];
+		vec3 worldPos = fin.in_vec3[1];
+		mat3 TBN = fin.in_mat3[0];
 
-		// use normal vec
-		vec3 norm = normalize(normal);
+		// TBN matrix, transform local normal to world space
+		vec3 ln = normalMap->sampleTex(texCoords);
+		vec3 n = TBN * ln;
+		vec3 norm = normalize(n);
+
+		//// use normal vec
+		//vec3 norm = normalize(normal);
 
 		vec3 diffuseColor = diffuseMap->sampleTex(texCoords);
 
@@ -165,11 +173,15 @@ public:
 };
 
 class CubeMapFragmentShader : public FragmentShader {
+	// VS_out:
+	//     vec3 cubeMapTexCoords
 public:
 	CubeMapTexture* cubeMapTexture;
 
-	vec3 shading(Vertex v) {
-		vec3 color = cubeMapTexture->sampleCubeMap(v.cubeMapTexCoords);
+	vec3 shading(FS_in fin) {
+		vec3 cubeMapTexCoords = fin.in_vec3[0];
+
+		vec3 color = cubeMapTexture->sampleCubeMap(cubeMapTexCoords);
 
 		return color;
 	}

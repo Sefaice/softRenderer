@@ -89,5 +89,8 @@
     <ClInclude Include="..\..\src\utils\camera.h">
       <Filter>源文件\utils</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\utils\shader_payload.h">
+      <Filter>源文件\utils</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

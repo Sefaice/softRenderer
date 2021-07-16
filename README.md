@@ -22,3 +22,4 @@ softRenderer
 * model loading
 * normal mapping
 * skybox
+* multi-thread parallel optimization

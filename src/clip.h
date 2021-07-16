@@ -1,9 +1,10 @@
 #pragma once
 
 #include "./utils/math.h"
-#include "./utils/vertex.h"
+#include "./utils/shader_payload.h"
+
 #include <vector>
 
-std::vector<Vertex> Clip(std::vector<Vertex> vertices);
+std::vector<VS_out> Clip(std::vector<VS_out> vertices);
 
-std::vector<Vertex> ClipPolygonComponent(std::vector<Vertex> vertices, int axis, float sign);
+std::vector<VS_out> ClipPolygonComponent(std::vector<VS_out> vertices, int axis, float sign);

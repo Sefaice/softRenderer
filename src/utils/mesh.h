@@ -37,7 +37,18 @@ struct Mesh {
             Vertex v1 = vertices[*iter];
             Vertex v2 = vertices[*(iter+1)];
             Vertex v3 = vertices[*(iter+2)];
-            raster3d->DrawTriangle3D(v1, v2, v3, vertexShader, fragmentShader);
+
+            VS_in vin1;
+            vin1.in_vec2 = { v1.texCoords };
+            vin1.in_vec3 = { v1.pos, v1.normal, v1.tangent, v1.bitangent };
+            VS_in vin2;
+            vin2.in_vec2 = { v2.texCoords };
+            vin2.in_vec3 = { v2.pos, v2.normal, v2.tangent, v2.bitangent };
+            VS_in vin3;
+            vin3.in_vec2 = { v3.texCoords };
+            vin3.in_vec3 = { v3.pos, v3.normal, v3.tangent, v3.bitangent };
+
+            raster3d->DrawTriangle3D(vin1, vin2, vin3, vertexShader, fragmentShader);
         }
     }
 };

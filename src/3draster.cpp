@@ -13,30 +13,29 @@ Raster3d::Raster3d(Raster2d* raster2d, float frustum_n, float frustum_f,
 	t_frustum_nf2 = frustum_f * frustum_n / (frustum_n - frustum_f);
 }
 
-void Raster3d::DrawTriangle3D(Vertex v1, Vertex v2, Vertex v3, 
-	VertexShader* vertexShader, FragmentShader* fragmentShader) {
+void Raster3d::DrawTriangle3D(VS_in v1, VS_in v2, VS_in v3,	VertexShader* vertexShader, FragmentShader* fragmentShader) {
 
 	// vertex shader
-	v1 = vertexShader->shading(v1);
-	v2 = vertexShader->shading(v2);
-	v3 = vertexShader->shading(v3);
+	VS_out vf_p1 = vertexShader->shading(v1);
+	VS_out vf_p2 = vertexShader->shading(v2);
+	VS_out vf_p3 = vertexShader->shading(v3);
 
 	// clip
-	std::vector<Vertex> vertices; vertices.push_back(v1); vertices.push_back(v2); vertices.push_back(v3);
-	std::vector<Vertex> result = Clip(vertices);
+	std::vector<VS_out> payloads; payloads.push_back(vf_p1); payloads.push_back(vf_p2); payloads.push_back(vf_p3);
+	std::vector<VS_out> result = Clip(payloads);
 
 	// tessellation
 	if (result.size() > 0) { // result not empty
-		Vertex initVertex = result[0];
-		initVertex.pos = DV_transform(initVertex.pos);
+		VS_out payload1 = result[0];
+		payload1.pos = DV_transform(payload1.pos);
 
 		for (int i = 1; i < result.size() - 1; i++) {
-			Vertex secVertex = result[i];
-			Vertex thiVertex = result[i + 1];
-			secVertex.pos = DV_transform(secVertex.pos);
-			thiVertex.pos = DV_transform(thiVertex.pos);
+			VS_out payload2 = result[i];
+			VS_out payload3 = result[i + 1];
+			payload2.pos = DV_transform(payload2.pos);
+			payload3.pos = DV_transform(payload3.pos);
 
-			DrawTriangle2D(initVertex, secVertex, thiVertex, fragmentShader);
+			DrawTriangle2D(payload1, payload2, payload3, fragmentShader);
 		}
 	}
 }
@@ -55,21 +54,21 @@ vec4 Raster3d::DV_transform(vec4 pp) {
 }
 
 // draw triangle by line equation / center
-void Raster3d::DrawTriangle2D(Vertex v1, Vertex v2, Vertex v3, FragmentShader* fragmentShader) {
+void Raster3d::DrawTriangle2D(VS_out payload1, VS_out payload2, VS_out payload3, FragmentShader* fragmentShader) {
 	
 	if (this->t_polygon_mode) { // draw frame in polygon mode
-		t_raster2d->DrawLine(v1.pos.x, v1.pos.y, v2.pos.x, v2.pos.y);
-		t_raster2d->DrawLine(v2.pos.x, v2.pos.y, v3.pos.x, v3.pos.y);
-		t_raster2d->DrawLine(v3.pos.x, v3.pos.y, v1.pos.x, v1.pos.y);
+		t_raster2d->DrawLine(payload1.pos.x, payload1.pos.y, payload2.pos.x, payload2.pos.y);
+		t_raster2d->DrawLine(payload2.pos.x, payload2.pos.y, payload3.pos.x, payload3.pos.y);
+		t_raster2d->DrawLine(payload3.pos.x, payload3.pos.y, payload1.pos.x, payload1.pos.y);
 		/*raster2d->DrawLineWu(p1.x, p1.y, p2.x, p2.y);
 		raster2d->DrawLineWu(p2.x, p2.y, p3.x, p3.y);
 		raster2d->DrawLineWu(p3.x, p3.y, p1.x, p1.y);*/
 		return;
 	}
 	
-	vec4 p1 = v1.pos;
-	vec4 p2 = v2.pos;
-	vec4 p3 = v3.pos;
+	vec4 p1 = payload1.pos;
+	vec4 p2 = payload2.pos;
+	vec4 p3 = payload3.pos;
 
 	// back face culling
 	if (p1.x * p2.y - p2.x * p1.y + p2.x * p3.y - p3.x * p2.y + p3.x * p1.y - p1.x * p3.y < 0) { // back face
@@ -121,10 +120,6 @@ void Raster3d::DrawTriangle2D(Vertex v1, Vertex v2, Vertex v3, FragmentShader* f
 				((o_y31 > 0 && onEdge31) || (o_y12 == 0 && o_x12 > 0 && onEdge12))); // 31 left, 12 top
 
 			if (u > 0 && v > 0 && u + v < 1 || overlap) {
-				
-				vec4 p1 = v1.pos;
-				vec4 p2 = v2.pos;
-				vec4 p3 = v3.pos;
 
 				// interpolation
 				double inte_tmp1 = (1 - u - v) * p1.w;
@@ -143,45 +138,15 @@ void Raster3d::DrawTriangle2D(Vertex v1, Vertex v2, Vertex v3, FragmentShader* f
 				//}
 
 				// other attributes perspective-correct interpolation
-				// normal
-				vec3 normal;
-				normal.x = z * (v1.normal.x * inte_tmp1 + v2.normal.x * inte_tmp2 + v3.normal.x * inte_tmp3);
-				normal.y = z * (v1.normal.y * inte_tmp1 + v2.normal.y * inte_tmp2 + v3.normal.y * inte_tmp3);
-				normal.z = z * (v1.normal.z * inte_tmp1 + v2.normal.z * inte_tmp2 + v3.normal.z * inte_tmp3);
-				// texture coords
-				vec2 texCoords;
-				texCoords.x = z * (v1.texCoords.x * inte_tmp1 + v2.texCoords.x * inte_tmp2 + v3.texCoords.x * inte_tmp3);
-				texCoords.y = z * (v1.texCoords.y * inte_tmp1 + v2.texCoords.y * inte_tmp2 + v3.texCoords.y * inte_tmp3);
-				// world pos
-				vec3 worldPos;
-				worldPos.x = z * (v1.worldPos.x * inte_tmp1 + v2.worldPos.x * inte_tmp2 + v3.worldPos.x * inte_tmp3);
-				worldPos.y = z * (v1.worldPos.y * inte_tmp1 + v2.worldPos.y * inte_tmp2 + v3.worldPos.y * inte_tmp3);
-				worldPos.z = z * (v1.worldPos.z * inte_tmp1 + v2.worldPos.z * inte_tmp2 + v3.worldPos.z * inte_tmp3);
-				//// TBN
-				//mat3 TBN;
-				//for (int i = 0; i < 3; i++)
-				//	for (int j = 0; j < 3; j++)
-				//		TBN.m[i][j] = z * (v1.TBN.m[i][j] * inte_tmp1 + v2.TBN.m[i][j] * inte_tmp2 + v3.TBN.m[i][j] * inte_tmp3);
-				// cubemap
-				vec3 cubeMapTexCoords;
-				cubeMapTexCoords.x = z * (v1.cubeMapTexCoords.x * inte_tmp1 + v2.cubeMapTexCoords.x * inte_tmp2 + v3.cubeMapTexCoords.x * inte_tmp3);
-				cubeMapTexCoords.y = z * (v1.cubeMapTexCoords.y * inte_tmp1 + v2.cubeMapTexCoords.y * inte_tmp2 + v3.cubeMapTexCoords.y * inte_tmp3);
-				cubeMapTexCoords.z = z * (v1.cubeMapTexCoords.z * inte_tmp1 + v2.cubeMapTexCoords.z * inte_tmp2 + v3.cubeMapTexCoords.z * inte_tmp3);
+				FS_in payload_interp = pc_interpolation(payload1, payload2, payload3, z, inte_tmp1, inte_tmp2, inte_tmp3);
 
 				// SHADING (in fragment shader)
-				Vertex fv;
-				fv.normal = normal;
-				fv.texCoords = texCoords;
-				fv.worldPos = worldPos;
-				//fv.TBN = TBN;
-				fv.cubeMapTexCoords = cubeMapTexCoords;
-				vec3 color = fragmentShader->shading(fv);
+				vec3 color = fragmentShader->shading(payload_interp);
 
 				t_raster2d->DrawPoint(vec2(x, y), bufferz, color);
 			}
 		}
 	}
-
 }
 
 // check if a point is in triangle funcs

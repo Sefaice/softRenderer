@@ -18,10 +18,10 @@ Raster2d* raster2d;
 Raster3d* raster3d;
 
 // shaders
-VertexShader* vertexShader;
-FragmentShader* fragmentShader;
+VertexShader* phongVertexShader;
+FragmentShader* phongFragmentShader;
+ObjVertexShader* objVertexShader;
 ObjFragmentShader* objFragmentShader;
-
 CubeMapVertexShader* cubeMapVertexShader;
 CubeMapFragmentShader* cubeMapFragmentShader;
 
@@ -68,8 +68,9 @@ void InitRenderer(uint32_t* backBuffer, double* zbuffer, int backBufferWidth, in
 
 	camera = new Camera(cameraPos, cameraUp, -cameraBackword);
 
-	vertexShader = new PhongVertexShader();
-	fragmentShader = new PhongFragmentShader();
+	phongVertexShader = new PhongVertexShader();
+	phongFragmentShader = new PhongFragmentShader();
+	objVertexShader = new ObjVertexShader();
 	objFragmentShader = new ObjFragmentShader();
 	cubeMapVertexShader = new CubeMapVertexShader();
 	cubeMapFragmentShader = new CubeMapFragmentShader();
@@ -102,7 +103,7 @@ void InitRenderer(uint32_t* backBuffer, double* zbuffer, int backBufferWidth, in
 	//}
 	// assimp
 	//myModelObj = new Model("../../src/res/models/backpack/backpack.obj");
-	myModelObj = new Model("../../src/res/models/gun/gun.obj");
+	//myModelObj = new Model("../../src/res/models/gun/gun.obj");
 	//myModelObj = new Model("../../src/res/models/can/can.obj");
 	//myModelObj = new Model("../../src/res/models/jerrycan/jerrycan.obj");
 
@@ -190,9 +191,9 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 		(r + l) / (r - l), (t + b) / (t - b), -(frustum_f + frustum_n) / (frustum_f - frustum_n), -1,
 		0, 0, -2 * frustum_f * frustum_n / (frustum_f - frustum_n), 0);
 
-	vertexShader->model = model;
-	vertexShader->view = view;
-	vertexShader->projection = projection;
+	phongVertexShader->model = model;
+	phongVertexShader->view = view;
+	phongVertexShader->projection = projection;
 
 	//// draw point
 	//raster2d->DrawPoint(vec2(500, 100), bufferz, vec3(0, 0, 1));
@@ -210,11 +211,10 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 	//raster2d->DrawLineWu(100, 100, 800, 700);
 
 	// draw cube
-	//// shaders
-	//fragmentShader->lightColor = lightColor;
-	//fragmentShader->lightPos = lightPos;
-	//fragmentShader->viewPos = viewPos;
-	//DrawCube(raster3d, vertexShader, fragmentShader);
+	phongFragmentShader->lightColor = lightColor;
+	phongFragmentShader->lightPos = lightPos;
+	phongFragmentShader->viewPos = viewPos;
+	DrawCube(raster3d, phongVertexShader, phongFragmentShader);
 	/*model = mat4(1.0);
 	model = translate(model, vec3(0.0, -1.5, 0.0));
 	model = rotation * model;
@@ -232,17 +232,17 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 		vec3(1.0, 0, 0), vec3(0, 1, 0), vec3(0, 0, 1));*/
 
 	//// draw object
-	objFragmentShader->lightColor = lightColor;
-	objFragmentShader->lightPos = lightPos;
-	objFragmentShader->viewPos = viewPos;
-	myModelObj->Draw(raster3d, vertexShader, objFragmentShader);
+	//objFragmentShader->lightColor = lightColor;
+	//objFragmentShader->lightPos = lightPos;
+	//objFragmentShader->viewPos = viewPos;
+	//myModelObj->Draw(raster3d, vertexShader, objFragmentShader);
 
-	//// draw skybox
-	//view = matrix4(matrix3(view));
-	//cubeMapVertexShader->view = view;
-	//cubeMapVertexShader->projection = projection;
-	//cubeMapFragmentShader->cubeMapTexture = cubeMapTexture;
-	//DrawSkyBox(raster3d, cubeMapVertexShader, cubeMapFragmentShader);
+	// draw skybox
+	view = matrix4(matrix3(view));
+	cubeMapVertexShader->view = view;
+	cubeMapVertexShader->projection = projection;
+	cubeMapFragmentShader->cubeMapTexture = cubeMapTexture;
+	DrawSkyBox(raster3d, cubeMapVertexShader, cubeMapFragmentShader);
 }
 
 void DrawCube(Raster3d* raster3d, VertexShader* vShader, FragmentShader* fShader) {
@@ -255,116 +255,132 @@ void DrawCube(Raster3d* raster3d, VertexShader* vShader, FragmentShader* fShader
 	}*/
 
 	// counter-clockwise
-	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(0, 0, 1), vec2(0, 1), vec3(-1.0, 1.0, 1.0)),
-		Vertex(vec4(), vec3(0, 0, 1), vec2(0, 0), vec3(-1.0, -1.0, 1.0)),
-		Vertex(vec4(), vec3(0, 0, 1), vec2(1, 0), vec3(1.0, -1.0, 1.0)),
-		vShader, fShader); // front
-	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(0, 0, 1), vec2(0, 1), vec3(-1.0, 1.0, 1.0)),
-		Vertex(vec4(), vec3(0, 0, 1), vec2(1, 0), vec3(1.0, -1.0, 1.0)),
-		Vertex(vec4(), vec3(0, 0, 1), vec2(1, 1), vec3(1.0, 1.0, 1.0)),
-		vShader, fShader);
+	VS_in vin1;
+	vin1.in_vec2 = { vec2(0, 1) };
+	vin1.in_vec3 = { vec3(-1.0, 1.0, 1.0), vec3(0, 0, 1) };
+	VS_in vin2;
+	vin2.in_vec2 = { vec2(0, 0) };
+	vin2.in_vec3 = { vec3(-1.0, -1.0, 1.0), vec3(0, 0, 1) };
+	VS_in vin3;
+	vin3.in_vec2 = { vec2(1, 0) };
+	vin3.in_vec3 = { vec3(1.0, -1.0, 1.0), vec3(0, 0, 1) };
+	VS_in vin4;
+	vin4.in_vec2 = { vec2(1, 1) };
+	vin4.in_vec3 = { vec3(1.0, 1.0, 1.0), vec3(0, 0, 1) };
+	raster3d->DrawTriangle3D(vin1, vin2, vin3, vShader, fShader); // front
+	raster3d->DrawTriangle3D(vin1, vin3, vin4, vShader, fShader);
 
-	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(1.0, 0, 0), vec2(0, 1), vec3(1.0, 1.0, 1.0)),
-		Vertex(vec4(), vec3(1.0, 0, 0), vec2(0, 0), vec3(1.0, -1.0, 1.0)),
-		Vertex(vec4(), vec3(1.0, 0, 0), vec2(1, 0), vec3(1.0, -1.0, -1.0)),
-		vShader, fShader); // right
-	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(1.0, 0, 0), vec2(0, 1), vec3(1.0, 1.0, 1.0)),
-		Vertex(vec4(), vec3(1.0, 0, 0), vec2(1, 0), vec3(1.0, -1.0, -1.0)),
-		Vertex(vec4(), vec3(1.0, 0, 0), vec2(1, 1), vec3(1.0, 1.0, -1.0)),
-		vShader, fShader);
+	vin1;
+	vin1.in_vec2 = { vec2(0, 1) };
+	vin1.in_vec3 = { vec3(1.0, 1.0, 1.0), vec3(1, 0, 0) };
+	vin2;
+	vin2.in_vec2 = { vec2(0, 0) };
+	vin2.in_vec3 = { vec3(1.0, -1.0, 1.0), vec3(1, 0, 0) };
+	vin3;
+	vin3.in_vec2 = { vec2(1, 0) };
+	vin3.in_vec3 = { vec3(1.0, -1.0, -1.0), vec3(1, 0, 0) };
+	vin4;
+	vin4.in_vec2 = { vec2(1, 1) };
+	vin4.in_vec3 = { vec3(1.0, 1.0, -1.0), vec3(1, 0, 0) };
+	raster3d->DrawTriangle3D(vin1, vin2, vin3, vShader, fShader); // right
+	raster3d->DrawTriangle3D(vin1, vin3, vin4, vShader, fShader);
 
-	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(0, 1, 0), vec2(0, 1), vec3(-1.0, 1.0, -1.0)),
-		Vertex(vec4(), vec3(0, 1, 0), vec2(0, 0), vec3(-1.0, 1.0, 1.0)),
-		Vertex(vec4(), vec3(0, 1, 0), vec2(1, 0), vec3(1.0, 1.0, 1.0)),
-		vShader, fShader); // top
-	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(0, 1, 0), vec2(0, 1), vec3(1.0, 1.0, 1.0)),
-		Vertex(vec4(), vec3(0, 1, 0), vec2(1, 0), vec3(1.0, 1.0, -1.0)),
-		Vertex(vec4(), vec3(0, 1, 0), vec2(1, 1), vec3(-1.0, 1.0, -1.0)),
-		vShader, fShader);
+	vin1;
+	vin1.in_vec2 = { vec2(0, 1) };
+	vin1.in_vec3 = { vec3(-1.0, 1.0, -1.0), vec3(0, 1, 0) };
+	vin2;
+	vin2.in_vec2 = { vec2(0, 0) };
+	vin2.in_vec3 = { vec3(-1.0, 1.0, 1.0), vec3(0, 1, 0) };
+	vin3;
+	vin3.in_vec2 = { vec2(1, 0) };
+	vin3.in_vec3 = { vec3(1.0, 1.0, 1.0), vec3(0, 1, 0) };
+	vin4;
+	vin4.in_vec2 = { vec2(1, 1) };
+	vin4.in_vec3 = { vec3(1.0, 1.0, -1.0), vec3(0, 1, 0) };
+	raster3d->DrawTriangle3D(vin1, vin2, vin3, vShader, fShader); // top
+	raster3d->DrawTriangle3D(vin1, vin3, vin4, vShader, fShader);
+	vin1;
+	vin1.in_vec2 = { vec2(0, 1) };
+	vin1.in_vec3 = { vec3(-1.0, 1.0, -1.0), vec3(-1, 0, 0) };
+	vin2;
+	vin2.in_vec2 = { vec2(0, 0) };
+	vin2.in_vec3 = { vec3(-1.0, -1.0, -1.0), vec3(-1, 0, 0) };
+	vin3;
+	vin3.in_vec2 = { vec2(1, 0) };
+	vin3.in_vec3 = { vec3(-1.0, -1.0, 1.0), vec3(-1, 0, 0) };
+	vin4;
+	vin4.in_vec2 = { vec2(1, 1) };
+	vin4.in_vec3 = { vec3(-1.0, 1.0, 1.0), vec3(-1, 0, 0) };
+	raster3d->DrawTriangle3D(vin1, vin2, vin3, vShader, fShader); // left
+	raster3d->DrawTriangle3D(vin1, vin3, vin4, vShader, fShader);
 
-	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(-1.0, 0, 0), vec2(0, 1), vec3(-1.0, 1.0, -1.0)),
-		Vertex(vec4(), vec3(-1.0, 0, 0), vec2(0, 0), vec3(-1.0, -1.0, -1.0)),
-		Vertex(vec4(), vec3(-1.0, 0, 0), vec2(1, 0), vec3(-1.0, -1.0, 1.0)),
-		vShader, fShader); // left
-	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(-1.0, 0, 0), vec2(0, 1), vec3(-1.0, 1.0, -1.0)),
-		Vertex(vec4(), vec3(-1.0, 0, 0), vec2(1, 0), vec3(-1.0, -1.0, 1.0)),
-		Vertex(vec4(), vec3(-1.0, 0, 0), vec2(1, 1), vec3(-1.0, 1.0, 1.0)),
-		vShader, fShader);
+	vin1;
+	vin1.in_vec2 = { vec2(0, 1) };
+	vin1.in_vec3 = { vec3(1.0, 1.0, -1.0), vec3(0, 0, -1) };
+	vin2;
+	vin2.in_vec2 = { vec2(0, 0) };
+	vin2.in_vec3 = { vec3(1.0, -1.0, -1.0), vec3(0, 0, -1) };
+	vin3;
+	vin3.in_vec2 = { vec2(1, 0) };
+	vin3.in_vec3 = { vec3(-1.0, -1.0, -1.0), vec3(0, 0, -1) };
+	vin4;
+	vin4.in_vec2 = { vec2(1, 1) };
+	vin4.in_vec3 = { vec3(-1.0, 1.0, -1.0), vec3(0, 0, -1) };
+	raster3d->DrawTriangle3D(vin1, vin2, vin3, vShader, fShader); // back
+	raster3d->DrawTriangle3D(vin1, vin3, vin4, vShader, fShader);
 
-	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(0, 0, -1), vec2(0, 1), vec3(1.0, 1.0, -1.0)),
-		Vertex(vec4(), vec3(0, 0, -1), vec2(0, 0), vec3(1.0, -1.0, -1.0)),
-		Vertex(vec4(), vec3(0, 0, -1), vec2(1, 0), vec3(-1.0, -1.0, -1.0)),
-		vShader, fShader); // back
-	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(0, 0, -1), vec2(0, 1), vec3(1.0, 1.0, -1.0)),
-		Vertex(vec4(), vec3(0, 0, -1), vec2(1, 0), vec3(-1.0, -1.0, -1.0)),
-		Vertex(vec4(), vec3(0, 0, -1), vec2(1, 1), vec3(-1.0, 1.0, -1.0)),
-		vShader, fShader);
-
-	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(0, -1, 0), vec2(0, 1), vec3(-1.0, -1.0, 1.0)),
-		Vertex(vec4(), vec3(0, -1, 0), vec2(0, 0), vec3(-1.0, -1.0, -1.0)),
-		Vertex(vec4(), vec3(0, -1, 0), vec2(1, 0), vec3(1.0, -1.0, -1.0)),
-		vShader, fShader); // bottom
-	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(0, -1, 0), vec2(0, 1), vec3(-1.0, -1.0, 1.0)),
-		Vertex(vec4(), vec3(0, -1, 0), vec2(1, 0), vec3(1.0, -1.0, -1.0)),
-		Vertex(vec4(), vec3(0, -1, 0), vec2(1, 1), vec3(1.0, -1.0, 1.0)),
-		vShader, fShader);
+	vin1;
+	vin1.in_vec2 = { vec2(0, 1) };
+	vin1.in_vec3 = { vec3(-1.0, -1.0, 1.0), vec3(0, -1, 0) };
+	vin2;
+	vin2.in_vec2 = { vec2(0, 0) };
+	vin2.in_vec3 = { vec3(-1.0, -1.0, -1.0), vec3(0, -1, 0) };
+	vin3;
+	vin3.in_vec2 = { vec2(1, 0) };
+	vin3.in_vec3 = { vec3(1.0, -1.0, -1.0), vec3(0, -1, 0) };
+	vin4;
+	vin4.in_vec2 = { vec2(1, 1) };
+	vin4.in_vec3 = { vec3(1.0, -1.0, 1.0), vec3(0, -1, 0) };
+	raster3d->DrawTriangle3D(vin1, vin2, vin3, vShader, fShader); // bottom
+	raster3d->DrawTriangle3D(vin1, vin3, vin4, vShader, fShader);
 }
 
 
 // since we "see" inside the skybox, use clockwise to prevent face culling
 void DrawSkyBox(Raster3d* raster3d, CubeMapVertexShader* vShader, CubeMapFragmentShader* fShader) {
+	
+	VS_in vin1;
+	vin1.in_vec3 = { vec3(-1.0, 1.0, 1.0) };
+	VS_in vin2;
+	vin2.in_vec3 = { vec3(-1.0, -1.0, 1.0) };
+	VS_in vin3;
+	vin3.in_vec3 = { vec3(1.0, -1.0, 1.0) };
+	VS_in vin4;
+	vin4.in_vec3 = { vec3(1.0, 1.0, 1.0) };
+	VS_in vin5;
+	vin5.in_vec3 = { vec3(-1.0, 1.0, -1.0) };
+	VS_in vin6;
+	vin6.in_vec3 = { vec3(-1.0, -1.0, -1.0) };
+	VS_in vin7;
+	vin7.in_vec3 = { vec3(1.0, -1.0, -1.0) };
+	VS_in vin8;
+	vin8.in_vec3 = { vec3(1.0, 1.0, -1.0) };
 
-	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(), vec2(), vec3(-1.0, 1.0, 1.0)),
-		Vertex(vec4(), vec3(), vec2(), vec3(1.0, -1.0, 1.0)),
-		Vertex(vec4(), vec3(), vec2(), vec3(-1.0, -1.0, 1.0)),
-		vShader, fShader); // front
-	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(), vec2(), vec3(-1.0, 1.0, 1.0)),
-		Vertex(vec4(), vec3(), vec2(), vec3(1.0, 1.0, 1.0)),
-		Vertex(vec4(), vec3(), vec2(), vec3(1.0, -1.0, 1.0)),
-		vShader, fShader);
+	raster3d->DrawTriangle3D(vin1, vin3, vin2, vShader, fShader); // front
+	raster3d->DrawTriangle3D(vin1, vin4, vin3, vShader, fShader);
 
-	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(), vec2(), vec3(1.0, 1.0, 1.0)),
-		Vertex(vec4(), vec3(), vec2(), vec3(1.0, -1.0, -1.0)),
-		Vertex(vec4(), vec3(), vec2(), vec3(1.0, -1.0, 1.0)),
-		vShader, fShader); // right
-	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(), vec2(), vec3(1.0, 1.0, 1.0)),
-		Vertex(vec4(), vec3(), vec2(), vec3(1.0, 1.0, -1.0)),
-		Vertex(vec4(), vec3(), vec2(), vec3(1.0, -1.0, -1.0)),
-		vShader, fShader);
+	raster3d->DrawTriangle3D(vin4, vin7, vin3, vShader, fShader); // right
+	raster3d->DrawTriangle3D(vin4, vin8, vin7, vShader, fShader);
 
-	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(), vec2(), vec3(-1.0, 1.0, -1.0)),
-		Vertex(vec4(), vec3(), vec2(), vec3(1.0, 1.0, 1.0)),
-		Vertex(vec4(), vec3(), vec2(), vec3(-1.0, 1.0, 1.0)),
-		vShader, fShader); // top
-	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(), vec2(), vec3(1.0, 1.0, 1.0)),
-		Vertex(vec4(), vec3(), vec2(), vec3(-1.0, 1.0, -1.0)),
-		Vertex(vec4(), vec3(), vec2(), vec3(1.0, 1.0, -1.0)),
-		vShader, fShader);
+	raster3d->DrawTriangle3D(vin5, vin4, vin1, vShader, fShader); // top
+	raster3d->DrawTriangle3D(vin5, vin8, vin4, vShader, fShader);
 
-	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(), vec2(), vec3(-1.0, 1.0, -1.0)),
-		Vertex(vec4(), vec3(), vec2(), vec3(-1.0, -1.0, 1.0)),
-		Vertex(vec4(), vec3(), vec2(), vec3(-1.0, -1.0, -1.0)),
-		vShader, fShader); // left
-	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(), vec2(), vec3(-1.0, 1.0, -1.0)),
-		Vertex(vec4(), vec3(), vec2(), vec3(-1.0, 1.0, 1.0)),
-		Vertex(vec4(), vec3(), vec2(), vec3(-1.0, -1.0, 1.0)),
-		vShader, fShader);
+	raster3d->DrawTriangle3D(vin5, vin2, vin6, vShader, fShader); // left
+	raster3d->DrawTriangle3D(vin5, vin1, vin2, vShader, fShader);
 
-	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(0, 0, -1), vec2(0, 1), vec3(1.0, 1.0, -1.0)),
-		Vertex(vec4(), vec3(), vec2(), vec3(-1.0, -1.0, -1.0)),
-		Vertex(vec4(), vec3(), vec2(), vec3(1.0, -1.0, -1.0)),
-		vShader, fShader); // back
-	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(), vec2(), vec3(1.0, 1.0, -1.0)),
-		Vertex(vec4(), vec3(), vec2(), vec3(-1.0, 1.0, -1.0)),
-		Vertex(vec4(), vec3(), vec2(), vec3(-1.0, -1.0, -1.0)),
-		vShader, fShader);
+	raster3d->DrawTriangle3D(vin8, vin6, vin7, vShader, fShader); // back
+	raster3d->DrawTriangle3D(vin8, vin5, vin6, vShader, fShader);
 
-	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(), vec2(), vec3(-1.0, -1.0, 1.0)),
-		Vertex(vec4(), vec3(), vec2(), vec3(1.0, -1.0, -1.0)),
-		Vertex(vec4(), vec3(), vec2(), vec3(-1.0, -1.0, -1.0)),
-		vShader, fShader); // bottom
-	raster3d->DrawTriangle3D(Vertex(vec4(), vec3(), vec2(), vec3(-1.0, -1.0, 1.0)),
-		Vertex(vec4(), vec3(), vec2(), vec3(1.0, -1.0, 1.0)),
-		Vertex(vec4(), vec3(), vec2(), vec3(1.0, -1.0, -1.0)),
-		vShader, fShader);
+	raster3d->DrawTriangle3D(vin2, vin7, vin6, vShader, fShader); // bottom
+	raster3d->DrawTriangle3D(vin2, vin3, vin7, vShader, fShader);
 }

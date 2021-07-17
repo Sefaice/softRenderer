@@ -286,7 +286,9 @@ int main() {
 		LARGE_INTEGER time1;
 		QueryPerformanceCounter(&time1);
 		static int s_FrameCount = 0;
-		UpdateBackBuffer((time1.QuadPart - g_dtime0) / 10000000.0, cursorDown, curOffx, curOffy, scrollOff); // call drawing main func
+
+		// call drawing main func
+		UpdateBackBuffer((time1.QuadPart - g_dtime0) / 10000000.0, cursorDown, curOffx, curOffy, scrollOff);
 		s_FrameCount++;
 		LARGE_INTEGER time2;
 		QueryPerformanceCounter(&time2);
@@ -313,8 +315,6 @@ int main() {
 		memcpy(g_BackBitmapbuffer, g_Backbuffer, g_BackbufferWidth * g_BackbufferHeight * sizeof(g_Backbuffer[0]));
 #endif
 	}
-
-
 
 	//system("pause");
 

@@ -12,13 +12,13 @@ public:
 
 	// 3D rasterization
 
-	void DrawTriangle3D(VS_in, VS_in, VS_in, VertexShader* vertexShader, FragmentShader* fragmentShader);
+	void DrawTriangle3D(VS_in, VS_in, VS_in, VertexShader* , FragmentShader*);
 
 	vec4 DV_transform(vec4 p);
 
 	// 2D rasterization
 
-	void DrawTriangle2D(VS_out, VS_out, VS_out, FragmentShader* fragmentShader);
+	void DrawTriangle2D(VS_out*, VS_out*, VS_out*, FragmentShader*);
 
 private:
 	Raster2d* t_raster2d;

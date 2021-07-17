@@ -29,63 +29,63 @@ public:
 		return vec3(pw.x, pw.y, pw.z);
 	}
 
-	virtual VS_out* shading(VS_in v) {
+	virtual VS_out shading(VS_in v) {
 		std::cout << "error! virtual v shading" << std::endl;
-		return &VS_out(0, 0, 0);
+		return VS_out();
 	}
 };
 
-//class PhongVertexShader : public VertexShader {
-//	// VS_in:
-//	//     vec3 localPos
-//	//     vec3 normal
-//	//     vec2 texCoords
-//	// VS_out:
-//	//	   vec4 pos
-//	//     vec3 normal
-//	//     vec3 worldPos
-//	//     vec2 texCoords
-//public:
-//	VS_out shading(VS_in vin) {
-//		vec3 localPos = vin.in_vec3[0];
-//		vec3 normal = vin.in_vec3[1];
-//		vec2 texCoords = vin.in_vec2[0];
-//
-//		vec4 pos = MVP_transform(localPos);
-//		vec3 worldPos = getWorldPos(localPos);
-//		vec3 worldNormal = matrix3(transpose(inverse(model))) * normal;
-//
-//		VS_out vout(1, 2, 0);
-//		vout.pos = pos;
-//		vout.out_vec3[0] = worldNormal;
-//		vout.out_vec3[1] = worldPos;
-//		vout.out_vec2[0] = texCoords;
-//
-//		return vout;
-//	}
-//};
+class PhongVertexShader : public VertexShader {
+	// VS_in:
+	//     vec2 texCoords
+	//     vec3 localPos
+	//     vec3 normal
+	// VS_out:
+	//	   vec4 pos
+	//     vec2 texCoords
+	//     vec3 normal
+	//     vec3 worldPos 
+public:
+	VS_out shading(VS_in vin) {
+		vec2 texCoords = vin.texCoords;
+		vec3 localPos = vin.localPos;
+		vec3 normal = vin.normal;
+		
+		vec4 pos = MVP_transform(localPos);
+		vec3 worldPos = getWorldPos(localPos);
+		vec3 worldNormal = matrix3(transpose(inverse(model))) * normal;
+
+		VS_out vout;
+		vout.pos = pos;
+		vout.normal = worldNormal;
+		vout.worldPos = worldPos;
+		vout.texCoords = texCoords;
+
+		return vout;
+	}
+};
 
 class ObjVertexShader : public VertexShader {
 	// VS_in:
+	//     vec2 texCoords
 	//     vec3 localPos
 	//     vec3 normal
 	//     vec3 tangent
 	//     vec3 bitangent
-	//     vec2 texCoords
 	// VS_out:
 	//	   vec4 pos
+	//     vec2 texCoords
 	//     vec3 normal
 	//     vec3 worldPos
-	//     vec2 texCoords
 	//     mat3 TBN
 public:
-	VS_out* shading(VS_in vin) {
+	VS_out shading(VS_in vin) {
 
-		vec3 localPos = vin.in_vec3[0];
-		vec3 normal = vin.in_vec3[1];
-		vec3 tangent = vin.in_vec3[2];
-		vec3 bitangent = vin.in_vec3[3];
-		vec2 texCoords = vin.in_vec2[0];
+		vec2 texCoords = vin.texCoords;
+		vec3 localPos = vin.localPos;
+		vec3 normal = vin.normal;
+		vec3 tangent = vin.tangent;
+		vec3 bitangent = vin.bitangent;
 
 		vec3 T = vector3(model * vec4(tangent, 0.0));
 		T = normalize(T);
@@ -100,38 +100,38 @@ public:
 		vec3 worldPos = getWorldPos(localPos);
 		vec3 worldNormal = matrix3(transpose(inverse(model))) * normal;
 
-		VS_out* vout = new VS_out(1, 2, 1);
-		vout->pos = pos;
-		vout->out_vec3[0] = worldNormal;
-		vout->out_vec3[1] = worldPos;
-		vout->out_vec2[0] = texCoords;
-		vout->out_mat3[0] = TBN;
+		VS_out vout;
+		vout.pos = pos;
+		vout.normal = worldNormal;
+		vout.worldPos = worldPos;
+		vout.texCoords = texCoords;
+		vout.TBN = TBN;
 
 		return vout;
 	}
 };
-//
-//class CubeMapVertexShader : public VertexShader {
-//	// VS_in:
-//	//     vec3 localPos   
-//	// VS_out:
-//	//	   vec4 pos
-//	//     vec3 cubeMapTexCoords
-//public:
-//	VS_out shading(VS_in vin) {
-//
-//		vec3 localPos = vin.in_vec3[0];
-//
-//		vec4 pos = projection * view * vec4(localPos, 1.0);
-//		vec3 cubeMapTexCoords = localPos; // actually localPos
-//		
-//		// The resulting normalized device coordinates will then always have a z value equal to 1.0: the maximum depth value
-//		pos.z = pos.w;
-//
-//		VS_out vout(0, 1, 0);
-//		vout.pos = pos;
-//		vout.out_vec3[0] = cubeMapTexCoords;
-//
-//		return vout;
-//	}
-//};
+
+class CubeMapVertexShader : public VertexShader {
+	// VS_in:
+	//     vec3 localPos   
+	// VS_out:
+	//	   vec4 pos
+	//     vec3 cubeMapTexCoords
+public:
+	VS_out shading(VS_in vin) {
+
+		vec3 localPos = vin.localPos;
+
+		vec4 pos = projection * view * vec4(localPos, 1.0);
+		vec3 cubeMapTexCoords = localPos; // actually localPos
+		
+		// The resulting normalized device coordinates will then always have a z value equal to 1.0: the maximum depth value
+		pos.z = pos.w;
+
+		VS_out vout;
+		vout.pos = pos;
+		vout.cubeMapTexCoords = cubeMapTexCoords;
+
+		return vout;
+	}
+};

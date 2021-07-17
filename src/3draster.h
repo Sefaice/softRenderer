@@ -18,7 +18,7 @@ public:
 
 	// 2D rasterization
 
-	void DrawTriangle2D(VS_out*, VS_out*, VS_out*, FragmentShader*);
+	void DrawTriangle2D(VS_out, VS_out, VS_out, FragmentShader*);
 
 private:
 	Raster2d* t_raster2d;

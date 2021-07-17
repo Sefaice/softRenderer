@@ -74,14 +74,14 @@ protected:
 
 class PhongFragmentShader : public FragmentShader {
 	// VS_out:
+	//     vec2 texCoords
 	//     vec3 normal
 	//     vec3 worldPos
-	//     vec2 texCoords
 public:
 	vec3 shading(FS_in fin) {
-		vec3 normal = fin.in_vec3[0];
-		vec2 texCoords = fin.in_vec2[0];
-		vec3 worldPos = fin.in_vec3[1];
+		vec2 texCoords = fin.texCoords;
+		vec3 normal = fin.normal;
+		vec3 worldPos = fin.worldPos;
 
 		vec3 texColor = vec3(0.5f, 0.6f, 0.7f);
 
@@ -119,9 +119,9 @@ public:
 
 class ObjFragmentShader : public FragmentShader {
 	// VS_out:
+	//     vec2 texCoords
 	//     vec3 normal
 	//     vec3 worldPos
-	//     vec2 texCoords
 	//     mat3 TBN
 public:
 	Texture* diffuseMap;
@@ -129,10 +129,10 @@ public:
 	Texture* normalMap;
 
 	vec3 shading(FS_in fin) {
-		vec3 normal = fin.in_vec3[0];
-		vec2 texCoords = fin.in_vec2[0];
-		vec3 worldPos = fin.in_vec3[1];
-		mat3 TBN = fin.in_mat3[0];
+		vec2 texCoords = fin.texCoords;
+		vec3 normal = fin.normal;
+		vec3 worldPos = fin.worldPos;
+		mat3 TBN = fin.TBN;
 
 		// TBN matrix, transform local normal to world space
 		vec3 ln = normalMap->sampleTex(texCoords);
@@ -179,7 +179,7 @@ public:
 	CubeMapTexture* cubeMapTexture;
 
 	vec3 shading(FS_in fin) {
-		vec3 cubeMapTexCoords = fin.in_vec3[0];
+		vec3 cubeMapTexCoords = fin.cubeMapTexCoords;
 
 		vec3 color = cubeMapTexture->sampleCubeMap(cubeMapTexCoords);
 

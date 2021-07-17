@@ -5,6 +5,6 @@
 
 #include <vector>
 
-std::vector<VS_out*> Clip(std::vector<VS_out*>);
+std::vector<VS_out> Clip(std::vector<VS_out>);
 
-std::vector<VS_out*> ClipPolygonComponent(std::vector<VS_out*>, int, float);
+std::vector<VS_out> ClipPolygonComponent(std::vector<VS_out>, int, float);

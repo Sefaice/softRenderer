@@ -15,32 +15,29 @@ Raster3d::Raster3d(Raster2d* raster2d, float frustum_n, float frustum_f,
 
 void Raster3d::DrawTriangle3D(VS_in v1, VS_in v2, VS_in v3,	VertexShader* vertexShader, FragmentShader* fragmentShader) {
 
-	std::cout << "start" << std::endl;
-
 	// vertex shader
-	VS_out* vf_p1 = vertexShader->shading(v1);
-	VS_out* vf_p2 = vertexShader->shading(v2);
-	VS_out* vf_p3 = vertexShader->shading(v3);
+	VS_out vf_p1 = vertexShader->shading(v1);
+	VS_out vf_p2 = vertexShader->shading(v2);
+	VS_out vf_p3 = vertexShader->shading(v3);
 
 	// clip
-	std::vector<VS_out*> payloads = { vf_p1, vf_p2, vf_p3 };
-	std::vector<VS_out*> result = Clip(payloads);
+	std::vector<VS_out> payloads = { vf_p1, vf_p2, vf_p3 };
+	std::vector<VS_out> result = Clip(payloads);
 
 	// tessellation
 	if (result.size() > 0) { // result not empty
-		VS_out* payload1 = result[0];
-		payload1->pos = DV_transform(payload1->pos);
+		VS_out payload1 = result[0];
+		payload1.pos = DV_transform(payload1.pos);
 
 		for (int i = 1; i < result.size() - 1; i++) {
-			VS_out* payload2 = result[i];
-			VS_out* payload3 = result[i + 1];
-			payload2->pos = DV_transform(payload2->pos);
-			payload3->pos = DV_transform(payload3->pos);
+			VS_out payload2 = result[i];
+			VS_out payload3 = result[i + 1];
+			payload2.pos = DV_transform(payload2.pos);
+			payload3.pos = DV_transform(payload3.pos);
 
 			DrawTriangle2D(payload1, payload2, payload3, fragmentShader);
 		}
 	}
-	std::cout << "end" << std::endl;
 }
 
 // divide, viewport transform
@@ -57,21 +54,21 @@ vec4 Raster3d::DV_transform(vec4 pp) {
 }
 
 // draw triangle by line equation / center
-void Raster3d::DrawTriangle2D(VS_out* payload1, VS_out* payload2, VS_out* payload3, FragmentShader* fragmentShader) {
+void Raster3d::DrawTriangle2D(VS_out payload1, VS_out payload2, VS_out payload3, FragmentShader* fragmentShader) {
 	
-	//if (this->t_polygon_mode) { // draw frame in polygon mode
-	//	t_raster2d->DrawLine(payload1.pos.x, payload1.pos.y, payload2.pos.x, payload2.pos.y);
-	//	t_raster2d->DrawLine(payload2.pos.x, payload2.pos.y, payload3.pos.x, payload3.pos.y);
-	//	t_raster2d->DrawLine(payload3.pos.x, payload3.pos.y, payload1.pos.x, payload1.pos.y);
-	//	/*raster2d->DrawLineWu(p1.x, p1.y, p2.x, p2.y);
-	//	raster2d->DrawLineWu(p2.x, p2.y, p3.x, p3.y);
-	//	raster2d->DrawLineWu(p3.x, p3.y, p1.x, p1.y);*/
-	//	return;
-	//}
+	if (this->t_polygon_mode) { // draw frame in polygon mode
+		t_raster2d->DrawLine(payload1.pos.x, payload1.pos.y, payload2.pos.x, payload2.pos.y);
+		t_raster2d->DrawLine(payload2.pos.x, payload2.pos.y, payload3.pos.x, payload3.pos.y);
+		t_raster2d->DrawLine(payload3.pos.x, payload3.pos.y, payload1.pos.x, payload1.pos.y);
+		/*raster2d->DrawLineWu(p1.x, p1.y, p2.x, p2.y);
+		raster2d->DrawLineWu(p2.x, p2.y, p3.x, p3.y);
+		raster2d->DrawLineWu(p3.x, p3.y, p1.x, p1.y);*/
+		return;
+	}
 	
-	vec4 p1 = payload1->pos;
-	vec4 p2 = payload2->pos;
-	vec4 p3 = payload3->pos;
+	vec4 p1 = payload1.pos;
+	vec4 p2 = payload2.pos;
+	vec4 p3 = payload3.pos;
 
 	// back face culling
 	if (p1.x * p2.y - p2.x * p1.y + p2.x * p3.y - p3.x * p2.y + p3.x * p1.y - p1.x * p3.y < 0) { // back face

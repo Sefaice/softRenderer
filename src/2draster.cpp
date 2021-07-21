@@ -24,9 +24,8 @@ void Raster2d::DrawPoint(vec2 p, double z, vec3 color) {
 		return;*/
 		//printf("final p: %d %d\n", p.x, p.y);
 
-	
 	double* zBuffer = t_zBuffer + (int)(p.y) * t_backBufferWidth + (int)(p.x);
-	if (z < zBuffer[0]) { // pass z test
+	if (z <= zBuffer[0]) { // pass z test
 		// update z-buffer
 		zBuffer[0] = z;
 		// draw

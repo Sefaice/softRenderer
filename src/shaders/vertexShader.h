@@ -29,7 +29,7 @@ public:
 		return vec3(pw.x, pw.y, pw.z);
 	}
 
-	virtual VS_out shading(VS_in v) {
+	virtual VS_out shading(VS_in vin) {
 		std::cout << "error! virtual v shading" << std::endl;
 		return VS_out();
 	}
@@ -131,6 +131,76 @@ public:
 		VS_out vout;
 		vout.pos = pos;
 		vout.cubeMapTexCoords = cubeMapTexCoords;
+
+		return vout;
+	}
+};
+
+class EMapVertexShader : public VertexShader { // environment mapping
+	// VS_in:
+	//     vec3 localPos
+	//     vec3 normal
+	// VS_out:
+	//	   vec4 pos
+	//     vec3 normal
+	//     vec3 worldPos 
+public:
+	VS_out shading(VS_in vin) {
+		vec3 localPos = vin.localPos;
+		vec3 normal = vin.normal;
+
+		vec4 pos = MVP_transform(localPos);
+		vec3 worldPos = getWorldPos(localPos);
+		vec3 worldNormal = matrix3(transpose(inverse(model))) * normal;
+
+		VS_out vout;
+		vout.pos = pos;
+		vout.normal = worldNormal;
+		vout.worldPos = worldPos;
+
+		return vout;
+	}
+};
+
+class DepthVertexShader : public VertexShader {
+public:
+
+	mat4 lightSpaceMatrix;
+
+	VS_out shading(VS_in vin) {
+		vec3 localPos = vin.localPos;
+		vec4 pos = lightSpaceMatrix * model * vec4(localPos, 1.0);
+
+		VS_out vout;
+		vout.pos = pos;
+
+		return vout;
+	}
+};
+
+class ShadowVertexShader : public VertexShader {
+public:
+
+	mat4 lightSpaceMatrix;
+
+	VS_out shading(VS_in vin) {
+		vec2 texCoords = vin.texCoords;
+		vec3 localPos = vin.localPos;
+		vec3 normal = vin.normal;
+
+		vec4 pos = MVP_transform(localPos);
+		vec3 worldPos = getWorldPos(localPos);
+		vec3 worldNormal = matrix3(transpose(inverse(model))) * normal;
+
+		// shadow
+		vec4 posLightSpace = lightSpaceMatrix * vec4(worldPos, 1.0);
+
+		VS_out vout;
+		vout.pos = pos;
+		vout.normal = worldNormal;
+		vout.worldPos = worldPos;
+		vout.texCoords = texCoords;
+		vout.posLightSpace = posLightSpace;
 
 		return vout;
 	}

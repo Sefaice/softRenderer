@@ -231,6 +231,22 @@ inline vec3 reflect(const vec3& v, const vec3& n)
 	return v - n * dot(v, n) * 2;
 }
 
+// 折射。入射向量v，法向量n都要是单位向量，出射向量也是单位向量，nint为折射率（入射材质折射率/折射材质折射率）
+inline vec3 refract(const vec3& v, const vec3& n, float nint)
+{
+	// 入射角
+	float dt = dot(v, n);
+	float discr = 1.0f - nint * nint * (1 - dt * dt);
+	// glm的实现也有这个判断，可能是为了排除折射率小于1的情况
+	if (discr > 0)
+	{
+		vec3 outRefracted = nint * (v - n * dt) - n * sqrtf(discr);
+		return outRefracted;
+	}
+
+	return vec3(0);
+}
+
 inline vec2 lerp(vec2 v1, vec2 v2, float t) {
 	return vec2(v1.x * (1 - t) + v2.x * t, v1.y * (1 - t) + v2.y * t);
 }
@@ -367,6 +383,8 @@ inline mat4 rotate(const mat4& m, float angle, vec3 axis) { // angle is in radia
 	return r * m;
 }
 
+
+// angle in radians
 inline mat4 getRotate(float angle, vec3 axis) {
 	axis = normalize(axis);
 	float a = cos(angle / 2);
@@ -388,4 +406,55 @@ inline mat4 scale(const mat4& m, float scaleAmount) {
 		0, 0, 0, 1);
 
 	return s * m;
+}
+
+inline mat4 scale(const mat4& m, float fx, float fy, float fz) {
+	mat4 s = mat4(fx, 0, 0, 0,
+		0, fy, 0, 0,
+		0, 0, fz, 0,
+		0, 0, 0, 1);
+
+	return s * m;
+}
+
+inline mat4 lookAt(vec3 eye, vec3 center, vec3 worldUp) {
+
+	vec3 front = normalize(center - eye);
+	vec3 right = cross(front, worldUp);
+	right = normalize(right);
+	vec3 up = cross(right, front);
+	up = normalize(up);
+
+	mat4 view1 = mat4(right.x, up.x, -front.x, 0,
+		right.y, up.y, -front.y, 0,
+		right.z, up.z, -front.z, 0,
+		0, 0, 0, 1);
+	mat4 view2 = mat4(1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		-eye.x, -eye.y, -eye.z, 1);
+
+	return view1 * view2;
+}
+
+// fov in degrees, ar is aspect ratio, near, far
+inline mat4 perspective(float fov, float ar, float n, float f) {
+	float tanHalfHFOV = tanf(radians(fov / 2.0f)) * ar;
+	float tanHalfVFOV = tanf(radians(fov / 2.0f));
+	float r = n * tanHalfHFOV, l = -n * tanHalfHFOV;
+	float t = n * tanHalfVFOV, b = -n * tanHalfVFOV;
+
+	return mat4(2 * n / (r - l),   0,                 0,                    0,
+		        0,                 2 * n / (t - b),   0,                    0,
+		        (r + l) / (r - l), (t + b) / (t - b), -(f + n) / (f - n),   -1,
+		        0,                 0,                 -2 * f * n / (f - n), 0);
+}
+
+// left, right, bottom, top, near, far
+inline mat4 ortho(float l, float r, float b, float t, float n, float f) {
+
+	return mat4(2 / (r - l),        0,                  0,                  0,
+		        0,                  2 / (t - b),        0,                  0,
+		        0,                  0,                  -2 / (f - n),       0,
+		        -(r + l) / (r - l), -(t + b) / (t - b), -(f + n) / (f - n), 1);
 }

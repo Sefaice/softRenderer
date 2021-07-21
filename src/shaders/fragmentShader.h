@@ -73,7 +73,7 @@ protected:
 };
 
 class PhongFragmentShader : public FragmentShader {
-	// VS_out:
+	// FS_in:
 	//     vec2 texCoords
 	//     vec3 normal
 	//     vec3 worldPos
@@ -118,7 +118,7 @@ public:
 };
 
 class ObjFragmentShader : public FragmentShader {
-	// VS_out:
+	// FS_in:
 	//     vec2 texCoords
 	//     vec3 normal
 	//     vec3 worldPos
@@ -173,9 +173,11 @@ public:
 };
 
 class CubeMapFragmentShader : public FragmentShader {
-	// VS_out:
+	// FS_in:
 	//     vec3 cubeMapTexCoords
 public:
+
+	// uniform
 	CubeMapTexture* cubeMapTexture;
 
 	vec3 shading(FS_in fin) {
@@ -184,5 +186,130 @@ public:
 		vec3 color = cubeMapTexture->sampleCubeMap(cubeMapTexCoords);
 
 		return color;
+	}
+};
+
+class EMapFragmentShader : public FragmentShader {
+	// FS_in:
+	//     vec3 normal
+	//     vec3 worldPos
+public:
+
+	// uniform
+	CubeMapTexture* cubeMapTexture;
+
+	vec3 shading(FS_in fin) {
+		vec3 normal = fin.normal;
+		vec3 worldPos = fin.worldPos;
+
+		// reflect
+		vec3 I = normalize(worldPos - viewPos);
+		vec3 reflectDir = reflect(I, normalize(normal));
+
+		// refract
+		float ratio = 1.00 / 1.52; // glass
+		vec3 refractDir = refract(I, normalize(normal), ratio);
+
+		vec3 color = cubeMapTexture->sampleCubeMap(refractDir);
+
+		return color;
+	}
+
+};
+
+class DepthFragmentShader : public FragmentShader {
+public:
+	vec3 shading(FS_in fin) {
+		// do nothing
+		return vec3();
+	}
+};
+
+class ShadowFragmentShader : public FragmentShader {
+public:
+
+	// uniforms
+	double* depthMap;
+	int depthMapHeight;
+	int depthMapWidth;
+
+	vec3 shading(FS_in fin) {
+		vec2 texCoords = fin.texCoords;
+		vec3 normal = fin.normal;
+		vec3 worldPos = fin.worldPos;
+		vec4 posLightSpace = fin.posLightSpace;
+
+		vec3 texColor = vec3(0.5f, 0.6f, 0.7f);
+		vec3 lightDir = lightPos - worldPos;
+		lightDir = normalize(lightDir);
+		vec3 norm = normalize(normal);
+
+		//float shadow = calcShadow(posLightSpace, norm, lightDir);
+		//std::cout << shadow << std::endl;
+
+		return texColor;
+		//return vec3(shadow);
+	}
+
+private:
+
+	float sampleDepthMap(vec2 texCoords) {
+
+		int x = texCoords.x * (depthMapWidth - 1);
+		int y = texCoords.y * (depthMapHeight - 1);
+		
+		double* tmp = depthMap + y * depthMapWidth + x;
+
+		return tmp[0];
+	}
+
+	// in light space
+	float calcShadow(vec4 posLightSpace, vec3 norm, vec3 lightDir)
+	{
+		float shadow = 0;
+
+		vec3 ndcCoords = vector3(posLightSpace) / posLightSpace.w;
+		ndcCoords = (ndcCoords + 1.0) / 2;
+
+		float closestDepth = sampleDepthMap(vec2(ndcCoords.x, ndcCoords.y));
+
+		// DEBUG
+		// -------------------------------------------
+		//			if(closestDepth > 0.0 && closestDepth < 1.0)
+		//				FragColor = vec4(debugColor * 3, 1.0);
+		//			else 
+		//				FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+		//			FragColor = vec4(vec3(closestDepth), 1.0);
+		// --------------------------------------
+
+		float t_frustum_n = .1f;
+		float t_frustum_f = 100.0f;
+		float currentDepth = ndcCoords.z;
+		float currentDepthz = (t_frustum_f - t_frustum_n) / 2 * currentDepth + (t_frustum_f + t_frustum_n) / 2;
+		float t_frustum_nf1 = t_frustum_f / (t_frustum_f - t_frustum_n);
+		float t_frustum_nf2 = t_frustum_f * t_frustum_n / (t_frustum_n - t_frustum_f);
+		currentDepthz = t_frustum_nf1 + t_frustum_nf2 / currentDepthz;
+
+		if (currentDepth > 1.0) {
+			shadow = 0;
+		}
+		else
+		{
+			float bias = maxInTwo(0.05 * (1.0 - dot(norm, lightDir)), 0.005);
+			//shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
+			shadow = currentDepth > closestDepth ? 1.0 : 0.0;
+			/*vec2 texelSize = 1.0 / textureSize(depthMap[index], 0);
+			for (int x = -1; x <= 1; ++x)
+			{
+				for (int y = -1; y <= 1; ++y)
+				{
+					float pcfDepth = texture(depthMap[index], ndcCoords.xy + vec2(x, y) * texelSize).r;
+					shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+				}
+			}
+			shadow /= 9.0;*/
+		}
+
+		return currentDepthz;
 	}
 };

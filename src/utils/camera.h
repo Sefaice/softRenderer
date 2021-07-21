@@ -30,9 +30,9 @@ public:
     vec3 up;
     vec3 right;
     vec3 worldUp;
-    // Euler Angles
-    float Yaw;
-    float Pitch;
+    //// Euler Angles
+    //float Yaw;
+    //float Pitch;
     // Camera options
     float movementSpeed;
     float mouseSensitivity;
@@ -40,7 +40,8 @@ public:
 
     // Constructor with vectors
     Camera(vec3 _position, vec3 _worldUp, vec3 _front)
-        : Yaw(YAW), Pitch(PITCH), movementSpeed(SPEED), mouseSensitivity(SENSITIVITY), zoom(ZOOM)
+        //: Yaw(YAW), Pitch(PITCH), movementSpeed(SPEED), mouseSensitivity(SENSITIVITY), zoom(ZOOM)
+        : movementSpeed(SPEED), mouseSensitivity(SENSITIVITY), zoom(ZOOM)
     {
         position = _position;
         worldUp = _worldUp;
@@ -89,32 +90,32 @@ public:
     //        Position += Right * velocity;
     //}
 
-    // Processes input received from a mouse input system. Expects the offset value in both the x and y direction.
-    void ProcessMouseMovement(float xoffset, float yoffset, bool constrainPitch = true)
-    {
-        xoffset *= mouseSensitivity;
-        yoffset *= mouseSensitivity;
+    //// Processes input received from a mouse input system. Expects the offset value in both the x and y direction.
+    //void ProcessMouseMovement(float xoffset, float yoffset, bool constrainPitch = true)
+    //{
+    //    xoffset *= mouseSensitivity;
+    //    yoffset *= mouseSensitivity;
 
-        Yaw += xoffset;
-        Pitch += yoffset;
-        /*if(Up.y < 0)
-            Yaw += xoffset;
-        else
-            Yaw -= xoffset;
-        Pitch += yoffset;*/
+    //    Yaw += xoffset;
+    //    Pitch += yoffset;
+    //    /*if(Up.y < 0)
+    //        Yaw += xoffset;
+    //    else
+    //        Yaw -= xoffset;
+    //    Pitch += yoffset;*/
 
-        // Make sure that when pitch is out of bounds, screen doesn't get flipped
-        if (constrainPitch)
-        {
-            if (Pitch > 89.0f)
-                Pitch = 89.0f;
-            if (Pitch < -89.0f)
-                Pitch = -89.0f;
-        }
+    //    // Make sure that when pitch is out of bounds, screen doesn't get flipped
+    //    if (constrainPitch)
+    //    {
+    //        if (Pitch > 89.0f)
+    //            Pitch = 89.0f;
+    //        if (Pitch < -89.0f)
+    //            Pitch = -89.0f;
+    //    }
 
-        // Update Front, Right and Up Vectors using the updated Euler angles
-        updateCameraVectors();
-    }
+    //    // Update Front, Right and Up Vectors using the updated Euler angles
+    //    updateCameraVectors();
+    //}
 
     //// Processes input received from a mouse scroll-wheel event. Only requires input on the vertical wheel-axis
     //void ProcessMouseScroll(float yoffset)
@@ -132,10 +133,10 @@ private:
     void updateCameraVectors()
     {
         // Calculate the new Front vector
-        vec3 front;
+       /* vec3 front;
         front.x = cos(radians(Yaw)) * cos(radians(Pitch));
         front.y = sin(radians(Pitch));
-        front.z = sin(radians(Yaw)) * cos(radians(Pitch));
+        front.z = sin(radians(Yaw)) * cos(radians(Pitch));*/
         front = normalize(front);
         // Also re-calculate the Right and Up vector
         right = cross(front, worldUp);  // Normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.

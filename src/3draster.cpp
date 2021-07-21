@@ -8,9 +8,6 @@ Raster3d::Raster3d(Raster2d* raster2d, float frustum_n, float frustum_f,
 	unsigned int backBufferWidth, unsigned int backBufferHeight, bool polygon_mode)
 	: t_raster2d(raster2d), t_frustum_n(frustum_n), t_frustum_f(frustum_f),
 	t_backBufferWidth(backBufferWidth), t_backBufferHeight(backBufferHeight), t_polygon_mode(polygon_mode) {
-
-	t_frustum_nf1 = frustum_f / (frustum_f - frustum_n);
-	t_frustum_nf2 = frustum_f * frustum_n / (frustum_n - frustum_f);
 }
 
 void Raster3d::DrawTriangle3D(VS_in v1, VS_in v2, VS_in v3,	VertexShader* vertexShader, FragmentShader* fragmentShader) {
@@ -47,7 +44,7 @@ vec4 Raster3d::DV_transform(vec4 pp) {
 	vec3 pNDC = vec3(pp.x * inverseClipW, pp.y * inverseClipW, pp.z * inverseClipW);
 
 	// viewport transform
-	float z = (t_frustum_f - t_frustum_n) / 2 * pNDC.z + (t_frustum_f + t_frustum_n) / 2; // depth range [N,F]
+	float z = (pNDC.z + 1.0) / 2.0; // depth range [0, 1]
 	vec4 ps = vec4((pNDC.x + 1.0) / 2.0 * (t_backBufferWidth - 1), (pNDC.y + 1.0) / 2.0 * (t_backBufferHeight - 1), z, inverseClipW);
 
 	return ps;
@@ -124,11 +121,10 @@ void Raster3d::DrawTriangle2D(VS_out payload1, VS_out payload2, VS_out payload3,
 				double inte_tmp1 = (1 - u - v) * p1.w;
 				double inte_tmp2 = v * p2.w;
 				double inte_tmp3 = u * p3.w;
-				double z = 1 / (inte_tmp1 + inte_tmp2 + inte_tmp3); // interpolated view space depth for attributes interpolation
+				double inte_d = 1 / (inte_tmp1 + inte_tmp2 + inte_tmp3); // interpolated view space depth for attributes interpolation
 
-				// z interpolation
-				double bufferz = z * (p1.z * inte_tmp1 + p2.z * inte_tmp2 + p3.z * inte_tmp3); // depth in [N,F], for z-buffer storing
-				bufferz = t_frustum_nf1 + t_frustum_nf2 / bufferz; // interpolated z in [0,1]
+				// z interpolation "looks as linear" here
+				double bufferz = p1.z * (1 - u - v) + p2.z * v + p3.z * u;
 
 				//// early depth test
 				//double* t_zBuffer = t_raster2d->t_zBuffer + (int)(y) * t_backBufferWidth + (int)(x);
@@ -137,7 +133,7 @@ void Raster3d::DrawTriangle2D(VS_out payload1, VS_out payload2, VS_out payload3,
 				//}
 
 				// other attributes perspective-correct interpolation
-				FS_in payload_interp = pc_interpolation(payload1, payload2, payload3, z, inte_tmp1, inte_tmp2, inte_tmp3);
+				FS_in payload_interp = pc_interpolation(payload1, payload2, payload3, inte_d, inte_tmp1, inte_tmp2, inte_tmp3);
 
 				// SHADING (in fragment shader)
 				vec3 color = fragmentShader->shading(payload_interp);

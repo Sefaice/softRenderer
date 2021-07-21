@@ -18,23 +18,27 @@ Raster2d* raster2d;
 Raster3d* raster3d;
 
 // shaders
-VertexShader* phongVertexShader;
-FragmentShader* phongFragmentShader;
+VertexShader* vertexShader;
+FragmentShader* fragmentShader;
+
 ObjVertexShader* objVertexShader;
 ObjFragmentShader* objFragmentShader;
+
 CubeMapVertexShader* cubeMapVertexShader;
 CubeMapFragmentShader* cubeMapFragmentShader;
+
+DepthVertexShader* dVertexShader;
+DepthFragmentShader* dFragmentShader;
+ShadowVertexShader* shadowVertexShader;
+ShadowFragmentShader* shadowFragmentShader;
 
 // view frustum
 float frustum_n = .1f;
 float frustum_f = 100.0f;
 
 // camera
-vec3 viewPos(0, 0, 15);
-vec3 cameraPos = viewPos;
-// vec3 cameraRight = vec3(1, 0, 0);
-vec3 cameraUp = vec3(0, 1, 0);
-vec3 cameraBackword = vec3(0, 0, 1);
+vec3 viewPos(0, 10, 15);
+vec3 lookatPos(0, 0, 0);
 Camera* camera;
 
 // transform matrix
@@ -57,6 +61,10 @@ Model* myModelObj;
 // skybox
 CubeMapTexture* cubeMapTexture;
 
+// framebuffer
+uint32_t* frameBuffer_color;
+double* frameBuffer_z;
+
 void InitRenderer(uint32_t* backBuffer, double* zbuffer, int backBufferWidth, int backBufferHeight) {
 
 	t_backBuffer = backBuffer;
@@ -66,14 +74,17 @@ void InitRenderer(uint32_t* backBuffer, double* zbuffer, int backBufferWidth, in
 	raster2d = new Raster2d(backBuffer, zbuffer, backBufferWidth, backBufferHeight);
 	raster3d = new Raster3d(raster2d, frustum_n, frustum_f, backBufferWidth, backBufferHeight, POLYGON_MODE);
 
-	camera = new Camera(cameraPos, cameraUp, -cameraBackword);
+	camera = new Camera(viewPos, vec3(0, 1, 0), normalize(lookatPos - viewPos));
 
-	phongVertexShader = new PhongVertexShader();
-	phongFragmentShader = new PhongFragmentShader();
 	objVertexShader = new ObjVertexShader();
 	objFragmentShader = new ObjFragmentShader();
 	cubeMapVertexShader = new CubeMapVertexShader();
 	cubeMapFragmentShader = new CubeMapFragmentShader();
+
+	dVertexShader = new DepthVertexShader();
+	dFragmentShader = new DepthFragmentShader();
+	shadowVertexShader = new ShadowVertexShader();
+	shadowFragmentShader = new ShadowFragmentShader();
 
 	// load objects
 	//// obj-loader
@@ -145,19 +156,20 @@ void InitRenderer(uint32_t* backBuffer, double* zbuffer, int backBufferWidth, in
 	//}
 
 	cubeMapTexture = new CubeMapTexture("../../src/res/skyboxes/lake");
+
+	// framebuffer
+	frameBuffer_color = new uint32_t[t_backBufferWidth * t_backBufferHeight];
+	memset(frameBuffer_color, 0, t_backBufferWidth * t_backBufferHeight * sizeof(frameBuffer_color[0]));
+	frameBuffer_z = new double[t_backBufferWidth * t_backBufferHeight];
+	std::fill(frameBuffer_z, frameBuffer_z + t_backBufferWidth * t_backBufferHeight, 1.0);
 }
 
 void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, float scrollOff) {
+
 	t_dtime = dt;
 
 	// clear backbuffer
 	memset(t_backBuffer, 0, t_backBufferWidth * t_backBufferHeight * sizeof(t_backBuffer[0]));
-	// clear z-buffer
-	/*for (int i = 0; i < t_backBufferWidth; i++) {
-		for (int j = 0; j < t_backBufferHeight; j++) {
-			t_zBuffer[j * t_backBufferWidth + i] = 1.0;
-		}
-	}*/
 	std::fill(t_zBuffer, t_zBuffer + t_backBufferWidth * t_backBufferHeight, 1.0f);
 
 	//// input movement
@@ -166,6 +178,7 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 	// init mats and shaders
 	// model
 	mat4 model = mat4(1.0);
+	model = scale(model, scaleFx + scrollOff / 10.0f);
 	//model = translate(model, vec3(6.0f * float(sin(t_dtime)), 0.0, 0.0));
 	//model = translate(model, vec3(0.0, -0.1, 0.0));
 	//model = rotate(model, radians(30.0), vec3(1, 1, 0));
@@ -173,23 +186,16 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 	//model = rotate(model, sin(t_dtime), vec3(-1, 0, 0));
 	// focus camera
 	if (cursorDown) {
-		vec3 rotateAxis = cross(vec3(curOffx, curOffy, 0), -cameraBackword);
+		vec3 rotateAxis = cross(normalize(vec3(curOffx, curOffy, 0)), camera->front);
 		rotation = getRotate(sqrt(curOffx * curOffx + curOffy * curOffy) / 300.0f, rotateAxis) * rotation;
 	}
 	model = rotation * model;
-	model = scale(model, scaleFx + scrollOff / 10.0f);
+	
 	mat4 view = camera->GetViewMatrix();
 	// projection
 	float fov = 45.0f;
 	float ar = (float)t_backBufferWidth / (float)t_backBufferHeight;
-	float tanHalfHFOV = tanf(radians(fov / 2.0f)) * ar;
-	float tanHalfVFOV = tanf(radians(fov / 2.0f));
-	float r = frustum_n * tanHalfHFOV, l = -frustum_n * tanHalfHFOV;
-	float t = frustum_n * tanHalfVFOV, b = -frustum_n * tanHalfVFOV;
-	mat4 projection = mat4(2 * frustum_n / (r - l), 0, 0, 0,
-		0, 2 * frustum_n / (t - b), 0, 0,
-		(r + l) / (r - l), (t + b) / (t - b), -(frustum_f + frustum_n) / (frustum_f - frustum_n), -1,
-		0, 0, -2 * frustum_f * frustum_n / (frustum_f - frustum_n), 0);
+	mat4 projection = perspective(fov, ar, frustum_n, frustum_f);
 
 	//// draw point
 	//raster2d->DrawPoint(vec2(500, 100), bufferz, vec3(0, 0, 1));
@@ -206,20 +212,41 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 	//// draw line by wu's algorithm
 	//raster2d->DrawLineWu(100, 100, 800, 700);
 
-	// draw cube
-	phongVertexShader->model = model;
-	phongVertexShader->view = view;
-	phongVertexShader->projection = projection;
-	phongFragmentShader->lightColor = lightColor;
-	phongFragmentShader->lightPos = lightPos;
-	phongFragmentShader->viewPos = viewPos;
-	DrawCube(raster3d, phongVertexShader, phongFragmentShader);
-	/*model = mat4(1.0);
-	model = translate(model, vec3(0.0, -1.5, 0.0));
+	//////////////// draw shadow
+
+	//memset(frameBuffer_color, 0, t_backBufferWidth * t_backBufferHeight * sizeof(frameBuffer_color[0]));
+	//std::fill(frameBuffer_z, frameBuffer_z + t_backBufferWidth * t_backBufferHeight, 1.0);
+
+	// draw to framebuffer
+	raster2d->t_backBuffer = frameBuffer_color;
+	raster2d->t_zBuffer = frameBuffer_z;
+	dVertexShader->model = model;
+	mat4 lightView = lookAt(lightPos, lookatPos, vec3(0, 1, 0)); // look from light
+	mat4 projection_ortho = ortho(-20, 20, -20, 20, frustum_n, frustum_f);
+	mat4 lightSpaceMatrix = projection_ortho * lightView;
+	dVertexShader->lightSpaceMatrix = lightSpaceMatrix;
+	DrawCube(raster3d, dVertexShader, dFragmentShader);
+	
+	// draw to backbuffer
+	raster2d->t_backBuffer = t_backBuffer;
+	raster2d->t_zBuffer = t_zBuffer;
+	shadowVertexShader->model = model;
+	shadowVertexShader->view = view;
+	shadowVertexShader->projection = projection;
+	shadowVertexShader->lightSpaceMatrix = lightSpaceMatrix;
+	shadowFragmentShader->depthMap = frameBuffer_z;
+	shadowFragmentShader->depthMapWidth = t_backBufferWidth;
+	shadowFragmentShader->depthMapHeight = t_backBufferHeight;
+	DrawCube(raster3d, shadowVertexShader, shadowFragmentShader);
+	vec3 cube2Pos(0.0, -5.0, 0.0);
+	model = mat4(1.0);
+	model = scale(model, 10, 0.01, 10);
+	model = translate(model, cube2Pos);
 	model = rotation * model;
-	model = scale(model, 0.3 + scaleFx + scrollOff / 10.0f);
-	vertexShader->model = model;
-	DrawCube(raster3d, vertexShader, fragmentShader);*/
+	shadowVertexShader->model = model;
+	DrawCube(raster3d, shadowVertexShader, shadowFragmentShader);
+
+	////////////////////////
 
 	//// draw object
 	//objVertexShader->model = model;
@@ -230,12 +257,12 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 	//objFragmentShader->viewPos = viewPos;
 	//myModelObj->Draw(raster3d, objVertexShader, objFragmentShader);
 
-	// draw skybox
-	view = matrix4(matrix3(view));
-	cubeMapVertexShader->view = view;
-	cubeMapVertexShader->projection = projection;
-	cubeMapFragmentShader->cubeMapTexture = cubeMapTexture;
-	DrawSkyBox(raster3d, cubeMapVertexShader, cubeMapFragmentShader);
+	//// draw skybox
+	//view = matrix4(matrix3(view));
+	//cubeMapVertexShader->view = view;
+	//cubeMapVertexShader->projection = projection;
+	//cubeMapFragmentShader->cubeMapTexture = cubeMapTexture;
+	//DrawSkyBox(raster3d, cubeMapVertexShader, cubeMapFragmentShader);
 }
 
 void DrawCube(Raster3d* raster3d, VertexShader* vShader, FragmentShader* fShader) {

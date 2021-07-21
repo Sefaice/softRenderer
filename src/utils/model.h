@@ -35,6 +35,12 @@ public:
             meshes[i].Draw(raster3d, vertexShader, fragmentShader);
     }
 
+    // draw for shadow
+    void Draw_shadow(Raster3d* raster3d, VertexShader* vertexShader, FragmentShader* fragmentShader) {
+        for (unsigned int i = 0; i < meshes.size(); i++)
+            meshes[i].Draw_shadow(raster3d, vertexShader, fragmentShader);
+    }
+
 private:
     /*  Functions   */
     // loads a model with supported ASSIMP extensions from file and stores the resulting meshes in the meshes vector.

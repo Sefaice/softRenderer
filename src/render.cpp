@@ -34,7 +34,7 @@ ShadowFragmentShader* shadowFragmentShader;
 
 // view frustum
 float frustum_n = .1f;
-float frustum_f = 100.0f;
+float frustum_f = 50.0f;
 
 // camera
 vec3 viewPos(0, 10, 15);
@@ -46,8 +46,8 @@ mat4 rotation = mat4(1.0f);
 float scaleFx = 1.0f;
 
 // light
-vec3 lightPos(.0f, 5.0f, 5.0f);
-vec3 lightColor(.7f, .7f, 0.7f);
+vec3 lightPos(.0f, 5.0f, 1.0f);
+vec3 lightColor(.7f, .7f, .7f);
 mat4 model_tmp; // use model for lighting temporarily
 
 //// subdivision
@@ -214,36 +214,55 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 
 	//////////////// draw shadow
 
-	//memset(frameBuffer_color, 0, t_backBufferWidth * t_backBufferHeight * sizeof(frameBuffer_color[0]));
-	//std::fill(frameBuffer_z, frameBuffer_z + t_backBufferWidth * t_backBufferHeight, 1.0);
+	memset(frameBuffer_color, 0, t_backBufferWidth * t_backBufferHeight * sizeof(frameBuffer_color[0]));
+	std::fill(frameBuffer_z, frameBuffer_z + t_backBufferWidth * t_backBufferHeight, 1.0);
 
 	// draw to framebuffer
 	raster2d->t_backBuffer = frameBuffer_color;
 	raster2d->t_zBuffer = frameBuffer_z;
-	dVertexShader->model = model;
+	// cull front face
+	raster3d->cull_mode = 1;
+	//
+	mat4 model_cube1 = model;
+	dVertexShader->model = model_cube1;
 	mat4 lightView = lookAt(lightPos, lookatPos, vec3(0, 1, 0)); // look from light
 	mat4 projection_ortho = ortho(-20, 20, -20, 20, frustum_n, frustum_f);
 	mat4 lightSpaceMatrix = projection_ortho * lightView;
 	dVertexShader->lightSpaceMatrix = lightSpaceMatrix;
+	//DrawCube(raster3d, dVertexShader, dFragmentShader);
+	myModelObj->Draw_shadow(raster3d, dVertexShader, dFragmentShader);
+	vec3 cube2Pos(0.0, -5.0, 0.0);
+	mat4 model_cube2 = mat4(1.0);
+	model_cube2 = scale(model_cube2, 5, 0.01, 5);
+	model_cube2 = translate(model_cube2, cube2Pos);
+	model_cube2 = rotation * model_cube2;
+	dVertexShader->model = model_cube2;
 	DrawCube(raster3d, dVertexShader, dFragmentShader);
-	
-	// draw to backbuffer
+	//
 	raster2d->t_backBuffer = t_backBuffer;
 	raster2d->t_zBuffer = t_zBuffer;
-	shadowVertexShader->model = model;
+	raster3d->cull_mode = 0;
+	
+	// draw to backbuffer
+	shadowVertexShader->model = model_cube1;
 	shadowVertexShader->view = view;
 	shadowVertexShader->projection = projection;
 	shadowVertexShader->lightSpaceMatrix = lightSpaceMatrix;
+	shadowFragmentShader->lightColor = lightColor;
+	shadowFragmentShader->lightPos = lightPos;
+	shadowFragmentShader->viewPos = viewPos;
 	shadowFragmentShader->depthMap = frameBuffer_z;
 	shadowFragmentShader->depthMapWidth = t_backBufferWidth;
 	shadowFragmentShader->depthMapHeight = t_backBufferHeight;
-	DrawCube(raster3d, shadowVertexShader, shadowFragmentShader);
-	vec3 cube2Pos(0.0, -5.0, 0.0);
-	model = mat4(1.0);
-	model = scale(model, 10, 0.01, 10);
-	model = translate(model, cube2Pos);
-	model = rotation * model;
-	shadowVertexShader->model = model;
+	//DrawCube(raster3d, shadowVertexShader, shadowFragmentShader);
+	objVertexShader->model = model;
+	objVertexShader->view = view;
+	objVertexShader->projection = projection;
+	objFragmentShader->lightColor = lightColor;
+	objFragmentShader->lightPos = lightPos;
+	objFragmentShader->viewPos = viewPos;
+	myModelObj->Draw(raster3d, objVertexShader, objFragmentShader);
+	shadowVertexShader->model = model_cube2;
 	DrawCube(raster3d, shadowVertexShader, shadowFragmentShader);
 
 	////////////////////////

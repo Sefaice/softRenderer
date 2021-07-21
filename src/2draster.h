@@ -18,7 +18,7 @@ public:
 
 	// Bresenham Algorithm
 	void DrawLine(int x0, int y0, int x1, int y1);
-
+	
 	// wu's line algorithm
 	void DrawPointWu(vec2 p, float z, vec3 color);
 	void DrawLineWu(float x0, float y0, float x1, float y1);

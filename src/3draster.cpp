@@ -43,9 +43,10 @@ vec4 Raster3d::DV_transform(vec4 pp) {
 	float inverseClipW = 1.0f / pp.w;
 	vec3 pNDC = vec3(pp.x * inverseClipW, pp.y * inverseClipW, pp.z * inverseClipW);
 
+	pNDC = (pNDC + 1.0) / 2.0; // range [0, 1]
+
 	// viewport transform
-	float z = (pNDC.z + 1.0) / 2.0; // depth range [0, 1]
-	vec4 ps = vec4((pNDC.x + 1.0) / 2.0 * (t_backBufferWidth - 1), (pNDC.y + 1.0) / 2.0 * (t_backBufferHeight - 1), z, inverseClipW);
+	vec4 ps = vec4(pNDC.x * (t_backBufferWidth - 1), pNDC.y * (t_backBufferHeight - 1), pNDC.z, inverseClipW);
 
 	return ps;
 }
@@ -68,7 +69,11 @@ void Raster3d::DrawTriangle2D(VS_out payload1, VS_out payload2, VS_out payload3,
 	vec4 p3 = payload3.pos;
 
 	// back face culling
-	if (p1.x * p2.y - p2.x * p1.y + p2.x * p3.y - p3.x * p2.y + p3.x * p1.y - p1.x * p3.y < 0) { // back face
+	float back_face = p1.x * p2.y - p2.x * p1.y + p2.x * p3.y - p3.x * p2.y + p3.x * p1.y - p1.x * p3.y; // < 0 back face, > 0 front face
+	if (cull_mode == 0 && back_face < 0) { // cull back face
+		return;
+	}
+	if (cull_mode == 1 && back_face > 0) { // cull front face
 		return;
 	}
 
@@ -123,7 +128,7 @@ void Raster3d::DrawTriangle2D(VS_out payload1, VS_out payload2, VS_out payload3,
 				double inte_tmp3 = u * p3.w;
 				double inte_d = 1 / (inte_tmp1 + inte_tmp2 + inte_tmp3); // interpolated view space depth for attributes interpolation
 
-				// z interpolation "looks as linear" here
+				// z "looks as linear" interpolation
 				double bufferz = p1.z * (1 - u - v) + p2.z * v + p3.z * u;
 
 				//// early depth test

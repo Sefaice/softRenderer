@@ -63,7 +63,7 @@ public:
     // Returns the view matrix calculated using Euler Angles and the LookAt Matrix
     mat4 GetViewMatrix()
     {
-        mat4 view1 = mat4(right.x, up.x, -front.x, 0,
+       mat4 view1 = mat4(right.x, up.x, -front.x, 0,
             right.y, up.y, -front.y, 0,
             right.z, up.z, -front.z, 0,
             0, 0, 0, 1);

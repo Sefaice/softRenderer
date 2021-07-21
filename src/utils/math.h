@@ -383,7 +383,6 @@ inline mat4 rotate(const mat4& m, float angle, vec3 axis) { // angle is in radia
 	return r * m;
 }
 
-
 // angle in radians
 inline mat4 getRotate(float angle, vec3 axis) {
 	axis = normalize(axis);

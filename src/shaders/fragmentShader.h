@@ -240,20 +240,41 @@ public:
 		vec4 posLightSpace = fin.posLightSpace;
 
 		vec3 texColor = vec3(0.5f, 0.6f, 0.7f);
+
+		// ambient
+		float ambientStrength = 0.2;
+		vec3 ambient = lightColor * ambientStrength;
+
+		// diffuse
+		vec3 norm = normalize(normal);
 		vec3 lightDir = lightPos - worldPos;
 		lightDir = normalize(lightDir);
-		vec3 norm = normalize(normal);
+		float diff = maxInTwo(dot(norm, lightDir), 0.0);
+		vec3 diffuse = lightColor * diff;
 
-		//float shadow = calcShadow(posLightSpace, norm, lightDir);
-		//std::cout << shadow << std::endl;
+		// specular
+		float specularStrength = 0.5;
+		vec3 viewDir = viewPos - worldPos;
+		viewDir = normalize(viewDir);
+		// blinn-phong
+		vec3 halfwayDir = lightDir + viewDir;
+		halfwayDir = normalize(halfwayDir);
+		float spec = pow(maxInTwo(dot(norm, halfwayDir), 0.0), 32);
+		vec3 specular = lightColor * specularStrength * spec;
 
-		return texColor;
-		//return vec3(shadow);
+		float shadow = calcShadow(posLightSpace, norm, lightDir);
+
+		vec3 color = (ambient + (1.0 - shadow) * (diffuse + specular)) * texColor;
+
+		//color = vec3(shadow);
+		//color = texColor;
+
+		return color;
 	}
 
 private:
 
-	float sampleDepthMap(vec2 texCoords) {
+	double sampleDepthMap(vec2 texCoords) {
 
 		int x = texCoords.x * (depthMapWidth - 1);
 		int y = texCoords.y * (depthMapHeight - 1);
@@ -266,29 +287,14 @@ private:
 	// in light space
 	float calcShadow(vec4 posLightSpace, vec3 norm, vec3 lightDir)
 	{
-		float shadow = 0;
+		double shadow = 0;
 
 		vec3 ndcCoords = vector3(posLightSpace) / posLightSpace.w;
-		ndcCoords = (ndcCoords + 1.0) / 2;
+		ndcCoords = (ndcCoords + 1.0) / 2.0;
 
-		float closestDepth = sampleDepthMap(vec2(ndcCoords.x, ndcCoords.y));
+		double currentDepth = ndcCoords.z;
 
-		// DEBUG
-		// -------------------------------------------
-		//			if(closestDepth > 0.0 && closestDepth < 1.0)
-		//				FragColor = vec4(debugColor * 3, 1.0);
-		//			else 
-		//				FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-		//			FragColor = vec4(vec3(closestDepth), 1.0);
-		// --------------------------------------
-
-		float t_frustum_n = .1f;
-		float t_frustum_f = 100.0f;
-		float currentDepth = ndcCoords.z;
-		float currentDepthz = (t_frustum_f - t_frustum_n) / 2 * currentDepth + (t_frustum_f + t_frustum_n) / 2;
-		float t_frustum_nf1 = t_frustum_f / (t_frustum_f - t_frustum_n);
-		float t_frustum_nf2 = t_frustum_f * t_frustum_n / (t_frustum_n - t_frustum_f);
-		currentDepthz = t_frustum_nf1 + t_frustum_nf2 / currentDepthz;
+		double closestDepth = sampleDepthMap(vec2(ndcCoords.x, ndcCoords.y));
 
 		if (currentDepth > 1.0) {
 			shadow = 0;
@@ -297,19 +303,19 @@ private:
 		{
 			float bias = maxInTwo(0.05 * (1.0 - dot(norm, lightDir)), 0.005);
 			//shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
-			shadow = currentDepth > closestDepth ? 1.0 : 0.0;
-			/*vec2 texelSize = 1.0 / textureSize(depthMap[index], 0);
-			for (int x = -1; x <= 1; ++x)
+
+			// pcf
+			for (int x = -3; x <= 3; ++x)
 			{
-				for (int y = -1; y <= 1; ++y)
+				for (int y = -3; y <= 3; ++y)
 				{
-					float pcfDepth = texture(depthMap[index], ndcCoords.xy + vec2(x, y) * texelSize).r;
+					double pcfDepth = sampleDepthMap(vec2(ndcCoords.x + (double)x / depthMapWidth, ndcCoords.y + (double)y / depthMapHeight));
 					shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
 				}
 			}
-			shadow /= 9.0;*/
+			shadow /= 49.0;
 		}
 
-		return currentDepthz;
+		return shadow;
 	}
 };

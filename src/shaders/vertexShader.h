@@ -14,8 +14,10 @@ public:
 
 		// local -> world
 		vec4 pw = model * pl;
+
 		// world -> view
 		vec4 pv = view * pw;
+
 		// view -> clip(perspective)
 		vec4 pp = projection * pv;
 
@@ -193,7 +195,7 @@ public:
 		vec3 worldNormal = matrix3(transpose(inverse(model))) * normal;
 
 		// shadow
-		vec4 posLightSpace = lightSpaceMatrix * vec4(worldPos, 1.0);
+		vec4 posLightSpace = lightSpaceMatrix * model * vec4(localPos, 1.0);
 
 		VS_out vout;
 		vout.pos = pos;

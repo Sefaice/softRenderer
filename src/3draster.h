@@ -7,6 +7,9 @@
 
 class Raster3d {
 public:
+
+	int cull_mode = 0; // 0 for cull back face, 1 for cull front face
+
 	Raster3d(Raster2d* raster2d, float frustum_n, float frustum_f,
 		unsigned int t_backBufferWidth, unsigned int t_backBufferHeight, bool polygon_mode);
 

@@ -51,4 +51,22 @@ struct Mesh {
             raster3d->DrawTriangle3D(vin1, vin2, vin3, vertexShader, fragmentShader);
         }
     }
+
+    void Draw_shadow(Raster3d* raster3d, VertexShader* vertexShader, FragmentShader* fragmentShader) {
+
+        for (std::vector<unsigned int>::iterator iter = indices.begin(); iter != indices.end(); iter += 3) {
+            Vertex v1 = vertices[*iter];
+            Vertex v2 = vertices[*(iter + 1)];
+            Vertex v3 = vertices[*(iter + 2)];
+
+            VS_in vin1;
+            vin1.localPos = v1.pos;
+            VS_in vin2;
+            vin2.localPos = v2.pos;
+            VS_in vin3;
+            vin3.localPos = v3.pos;
+
+            raster3d->DrawTriangle3D(vin1, vin2, vin3, vertexShader, fragmentShader);
+        }
+    }
 };

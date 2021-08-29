@@ -26,6 +26,8 @@ ObjFragmentShader* objFragmentShader;
 
 CubeMapVertexShader* cubeMapVertexShader;
 CubeMapFragmentShader* cubeMapFragmentShader;
+EMapVertexShader* eMapVertexShader;
+EMapFragmentShader* eMapFragmentShader;
 
 DepthVertexShader* dVertexShader;
 DepthFragmentShader* dFragmentShader;
@@ -37,7 +39,7 @@ float frustum_n = .1f;
 float frustum_f = 50.0f;
 
 // camera
-vec3 viewPos(0, 10, 15);
+vec3 viewPos(0, 0, 15);
 vec3 lookatPos(0, 0, 0);
 Camera* camera;
 
@@ -46,7 +48,7 @@ mat4 rotation = mat4(1.0f);
 float scaleFx = 1.0f;
 
 // light
-vec3 lightPos(.0f, 5.0f, 1.0f);
+vec3 lightPos(.0f, 5.0f, -5.0f);
 vec3 lightColor(.7f, .7f, .7f);
 mat4 model_tmp; // use model for lighting temporarily
 
@@ -78,8 +80,11 @@ void InitRenderer(uint32_t* backBuffer, double* zbuffer, int backBufferWidth, in
 
 	objVertexShader = new ObjVertexShader();
 	objFragmentShader = new ObjFragmentShader();
+
 	cubeMapVertexShader = new CubeMapVertexShader();
 	cubeMapFragmentShader = new CubeMapFragmentShader();
+	eMapVertexShader = new EMapVertexShader();
+	eMapFragmentShader = new EMapFragmentShader();
 
 	dVertexShader = new DepthVertexShader();
 	dFragmentShader = new DepthFragmentShader();
@@ -178,10 +183,10 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 	// init mats and shaders
 	// model
 	mat4 model = mat4(1.0);
-	model = scale(model, scaleFx + scrollOff / 10.0f);
+	model = scale(model, scaleFx * 0.3 + scrollOff / 10.0f);
 	//model = translate(model, vec3(6.0f * float(sin(t_dtime)), 0.0, 0.0));
 	//model = translate(model, vec3(0.0, -0.1, 0.0));
-	//model = rotate(model, radians(30.0), vec3(1, 1, 0));
+	model = rotate(model, radians(90.0), vec3(1, 1, 1));
 	//model = rotate(model, t_dtime / 4.0, vec3(1, 1, 1));
 	//model = rotate(model, sin(t_dtime), vec3(-1, 0, 0));
 	// focus camera
@@ -231,9 +236,9 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 	dVertexShader->lightSpaceMatrix = lightSpaceMatrix;
 	//DrawCube(raster3d, dVertexShader, dFragmentShader);
 	myModelObj->Draw_shadow(raster3d, dVertexShader, dFragmentShader);
-	vec3 cube2Pos(0.0, -5.0, 0.0);
+	vec3 cube2Pos(0.0, -2.0, 0.0);
 	mat4 model_cube2 = mat4(1.0);
-	model_cube2 = scale(model_cube2, 5, 0.01, 5);
+	model_cube2 = scale(model_cube2, 20, 0.01, 20);
 	model_cube2 = translate(model_cube2, cube2Pos);
 	model_cube2 = rotation * model_cube2;
 	dVertexShader->model = model_cube2;
@@ -275,6 +280,16 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 	//objFragmentShader->lightPos = lightPos;
 	//objFragmentShader->viewPos = viewPos;
 	//myModelObj->Draw(raster3d, objVertexShader, objFragmentShader);
+
+	//// draw object
+	//eMapVertexShader->model = model;
+	//eMapVertexShader->view = view;
+	//eMapVertexShader->projection = projection;
+	//eMapFragmentShader->lightColor = lightColor;
+	//eMapFragmentShader->lightPos = lightPos;
+	//eMapFragmentShader->viewPos = viewPos;
+	//eMapFragmentShader->cubeMapTexture = cubeMapTexture;
+	//DrawCube(raster3d, eMapVertexShader, eMapFragmentShader);
 
 	//// draw skybox
 	//view = matrix4(matrix3(view));

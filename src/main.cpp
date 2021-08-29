@@ -11,10 +11,12 @@
 
 #include "render.h"
 
-#define WINDOW_WIDTH 1920
-#define WINDOW_HEIGHT 1080
+#define WINDOW_WIDTH /*1920
+#define WINDOW_HEIGHT 1080*/
+#define WINDOW_WIDTH 1280	
+#define WINDOW_HEIGHT 720
 
-#define SSAA 0
+#define SSAA 1
 #define SSAA_LEVEL 2 // SSAA_LEVEL^2 x SSAA
 
 static HINSTANCE g_HInstance;
@@ -81,7 +83,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		L"soft",                        // Window text
 		WS_OVERLAPPEDWINDOW,            // Window style
 		// position and size
-		CW_USEDEFAULT, CW_USEDEFAULT, WINDOW_WIDTH + 24, WINDOW_HEIGHT + 64,
+		CW_USEDEFAULT, CW_USEDEFAULT, WINDOW_WIDTH + 0, WINDOW_HEIGHT + 0,
 		NULL,       // Parent window    
 		NULL,       // Menu
 		hInstance,  // Instance handle

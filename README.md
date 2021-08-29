@@ -30,17 +30,17 @@ softRenderer
 
 model loading and lighting model:
 
-![model-backpack](./imgs/backpack.png)
+![model-backpack](./imgs/backpack.PNG)
 
-![model-gun](./imgs/gun.png)
+![model-gun](./imgs/gun.PNG)
 
 shadow mapping with PCF:
 
-![shadow mapping](./imgs/shadow.png)
+![shadow mapping](./imgs/shadow.PNG)
 
 skybox and environment mapping:
 
-![skybox and environment mapping](./imgs/skybox.png)
+![skybox and environment mapping](./imgs/skybox.PNG)
 
 Catmull-Clark subdivision with half-edge:
 

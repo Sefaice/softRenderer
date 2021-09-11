@@ -319,3 +319,93 @@ private:
 		return shadow;
 	}
 };
+
+class PBRFragmentShader : public FragmentShader {
+	// FS_in:
+	//     vec2 texCoords
+	//     vec3 normal
+	//     vec3 worldPos
+public:
+	Texture* albedoMap;
+	Texture* normalMap;
+	Texture* metallicMap;
+	Texture* roughnessMap;
+	Texture* aoMap;
+
+	vec3 shading(FS_in fin) {
+		vec2 texCoords = fin.texCoords;
+		vec3 normal = fin.normal;
+		vec3 worldPos = fin.worldPos;
+
+		vec3 albedo = albedoMap->sampleTex(texCoords);
+		// sRGB -> linear space
+		albedo = vec3(pow(albedo.x, 2.2), pow(albedo.y, 2.2), pow(albedo.z, 2.2));
+		vec3 norm = normalize(normal);
+		float metallic = metallicMap->sampleTex(texCoords).x;
+		float roughness = roughnessMap->sampleTex(texCoords).x;
+		float ao = aoMap->sampleTex(texCoords).x;
+
+		vec3 viewDir = viewPos - worldPos;
+		viewDir = normalize(viewDir);
+		vec3 lightDir = lightPos - worldPos;
+		lightDir = normalize(lightDir);
+
+		// radiance
+		vec3 h = normalize(viewDir + lightDir);
+		float distance = (lightPos - worldPos).length();
+		float attenuation = 1.0 / (distance * distance);
+		vec3 radiance = lightColor * attenuation;
+
+		// BRDF
+		float D = normalDistribution(norm, h, roughness);
+		float G = geometrySub(norm, viewDir, roughness) * geometrySub(norm, lightDir, roughness); //  Smith's method
+		vec3 F0 = lerp(vec3(0.04), albedo, metallic);
+		vec3 F = fresnelEquation(h, viewDir, F0);
+
+		float nvDot = maxInTwo(dot(norm, viewDir), 0);
+		float nlDot = maxInTwo(dot(norm, lightDir), 0);
+		float denom = 4 * nvDot * nlDot;
+		float specular = D * G / maxInTwo(denom, 0.001);
+
+		vec3 ks = F;
+		vec3 kd = vec3(1.0) - ks;
+		kd = kd * vec3(1.0 - metallic); // metallic do not have diffuse
+
+		vec3 l = (kd * albedo / M_PI + ks * specular) * radiance * nlDot;
+
+		vec3 ambient = vec3(0.03) * albedo * ao;
+
+		vec3 color = ambient + l;
+
+		// HDR tonemapping
+		color = vec3(color.x / (color.x + 1.0), color.y / (color.y + 1.0), color.z / (color.z + 1.0));
+		// gamma correct
+		color = vec3(pow(color.x, 1.0 / 2.2), pow(color.y, 1.0 / 2.2), pow(color.z, 1.0 / 2.2));
+
+		return color;
+	}
+
+private:
+
+	// Trowbridge-Reitz GGX
+	float normalDistribution(vec3 n, vec3 h, float a) {
+		float nhDot = maxInTwo(dot(n, h), 0);
+		float denom = M_PI * pow(nhDot * nhDot * (a * a - 1.0) + 1.0, 2);
+
+		return a * a / maxInTwo(denom, 0.001); // prevent division by 0
+	}
+
+	// Schlick-GGX
+	float geometrySub(vec3 n, vec3 v, float a) {
+		float k = pow(a + 1.0, 2) / 8.0;
+		float nvDot = maxInTwo(dot(n, v), 0);
+
+		return nvDot / (nvDot * (1.0 - k) + k);
+	}
+
+	// Fresnel Equation
+	vec3 fresnelEquation(vec3 h, vec3 v, vec3 F0) {
+		float hvDot = dot(h, v);
+		return F0 + (1 - F0) * pow(1 - hvDot, 5);
+	}
+};

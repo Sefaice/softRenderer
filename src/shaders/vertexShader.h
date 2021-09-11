@@ -207,3 +207,35 @@ public:
 		return vout;
 	}
 };
+
+
+class PBRVertexShader : public VertexShader {
+	// VS_in:
+	//     vec2 texCoords
+	//     vec3 localPos
+	//     vec3 normal
+	// VS_out:
+	//	   vec4 pos
+	//     vec2 texCoords
+	//     vec3 normal
+	//     vec3 worldPos
+public:
+	VS_out shading(VS_in vin) {
+
+		vec2 texCoords = vin.texCoords;
+		vec3 localPos = vin.localPos;
+		vec3 normal = vin.normal;
+
+		vec4 pos = MVP_transform(localPos);
+		vec3 worldPos = getWorldPos(localPos);
+		vec3 worldNormal = matrix3(transpose(inverse(model))) * normal;
+
+		VS_out vout;
+		vout.pos = pos;
+		vout.normal = worldNormal;
+		vout.worldPos = worldPos;
+		vout.texCoords = texCoords;
+
+		return vout;
+	}
+};

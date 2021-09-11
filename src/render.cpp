@@ -34,12 +34,15 @@ DepthFragmentShader* dFragmentShader;
 ShadowVertexShader* shadowVertexShader;
 ShadowFragmentShader* shadowFragmentShader;
 
+PBRVertexShader* pbrVertexShader;
+PBRFragmentShader* pbrFragmentShader;
+
 // view frustum
 float frustum_n = .1f;
 float frustum_f = 50.0f;
 
 // camera
-vec3 viewPos(0, 0, 15);
+vec3 viewPos(0, 0, 10);
 vec3 lookatPos(0, 0, 0);
 Camera* camera;
 
@@ -48,8 +51,9 @@ mat4 rotation = mat4(1.0f);
 float scaleFx = 1.0f;
 
 // light
-vec3 lightPos(.0f, 5.0f, -5.0f);
-vec3 lightColor(.7f, .7f, .7f);
+vec3 lightPos(.0f, .0f, 5.0f);
+//vec3 lightColor(.7f, .7f, .7f);
+vec3 lightColor(150.0f, 150.0f, 150.0f); // pbr
 mat4 model_tmp; // use model for lighting temporarily
 
 //// subdivision
@@ -67,6 +71,9 @@ CubeMapTexture* cubeMapTexture;
 uint32_t* frameBuffer_color;
 double* frameBuffer_z;
 
+// pbr textures
+Texture* albedoTexture, * normalTexture, * metallicTexture, * roughnessTexture, * aoTexture;
+
 void InitRenderer(uint32_t* backBuffer, double* zbuffer, int backBufferWidth, int backBufferHeight) {
 
 	t_backBuffer = backBuffer;
@@ -77,6 +84,9 @@ void InitRenderer(uint32_t* backBuffer, double* zbuffer, int backBufferWidth, in
 	raster3d = new Raster3d(raster2d, frustum_n, frustum_f, backBufferWidth, backBufferHeight, POLYGON_MODE);
 
 	camera = new Camera(viewPos, vec3(0, 1, 0), normalize(lookatPos - viewPos));
+
+	vertexShader = new PhongVertexShader();
+	fragmentShader = new PhongFragmentShader();
 
 	objVertexShader = new ObjVertexShader();
 	objFragmentShader = new ObjFragmentShader();
@@ -90,6 +100,9 @@ void InitRenderer(uint32_t* backBuffer, double* zbuffer, int backBufferWidth, in
 	dFragmentShader = new DepthFragmentShader();
 	shadowVertexShader = new ShadowVertexShader();
 	shadowFragmentShader = new ShadowFragmentShader();
+
+	pbrVertexShader = new PBRVertexShader();
+	pbrFragmentShader = new PBRFragmentShader();
 
 	// load objects
 	//// obj-loader
@@ -119,7 +132,7 @@ void InitRenderer(uint32_t* backBuffer, double* zbuffer, int backBufferWidth, in
 	//}
 	// assimp
 	//myModelObj = new Model("../../src/res/models/backpack/backpack.obj");
-	myModelObj = new Model("../../src/res/models/gun/gun.obj");
+	//myModelObj = new Model("../../src/res/models/gun/gun.obj");
 	//myModelObj = new Model("../../src/res/models/can/can.obj");
 	//myModelObj = new Model("../../src/res/models/jerrycan/jerrycan.obj");
 
@@ -160,13 +173,20 @@ void InitRenderer(uint32_t* backBuffer, double* zbuffer, int backBufferWidth, in
 	//	global_h.to_mesh(verticesVector, verticesVector_quad);
 	//}
 
-	cubeMapTexture = new CubeMapTexture("../../src/res/skyboxes/lake");
+	//cubeMapTexture = new CubeMapTexture("../../src/res/skyboxes/lake");
 
-	// framebuffer
-	frameBuffer_color = new uint32_t[t_backBufferWidth * t_backBufferHeight];
-	memset(frameBuffer_color, 0, t_backBufferWidth * t_backBufferHeight * sizeof(frameBuffer_color[0]));
-	frameBuffer_z = new double[t_backBufferWidth * t_backBufferHeight];
-	std::fill(frameBuffer_z, frameBuffer_z + t_backBufferWidth * t_backBufferHeight, 1.0);
+	//// framebuffer
+	//frameBuffer_color = new uint32_t[t_backBufferWidth * t_backBufferHeight];
+	//memset(frameBuffer_color, 0, t_backBufferWidth * t_backBufferHeight * sizeof(frameBuffer_color[0]));
+	//frameBuffer_z = new double[t_backBufferWidth * t_backBufferHeight];
+	//std::fill(frameBuffer_z, frameBuffer_z + t_backBufferWidth * t_backBufferHeight, 1.0);
+
+	// pbr textures
+	albedoTexture = new Texture("../../src/res/pbr/albedo.png", "");
+	normalTexture = new Texture("../../src/res/pbr/normal.png", "");
+	metallicTexture = new Texture("../../src/res/pbr/metallic.png", "");
+	roughnessTexture = new Texture("../../src/res/pbr/roughness.png", "");
+	aoTexture = new Texture("../../src/res/pbr/ao.png", "");
 }
 
 void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, float scrollOff) {
@@ -183,7 +203,7 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 	// init mats and shaders
 	// model
 	mat4 model = mat4(1.0);
-	model = scale(model, scaleFx * 0.3 + scrollOff / 10.0f);
+	model = scale(model, scaleFx + scrollOff / 10.0f);
 	//model = translate(model, vec3(6.0f * float(sin(t_dtime)), 0.0, 0.0));
 	//model = translate(model, vec3(0.0, -0.1, 0.0));
 	model = rotate(model, radians(90.0), vec3(1, 1, 1));
@@ -217,71 +237,8 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 	//// draw line by wu's algorithm
 	//raster2d->DrawLineWu(100, 100, 800, 700);
 
-	//////////////// draw shadow
+	/*** draw skybox and environment map ***/
 
-	memset(frameBuffer_color, 0, t_backBufferWidth * t_backBufferHeight * sizeof(frameBuffer_color[0]));
-	std::fill(frameBuffer_z, frameBuffer_z + t_backBufferWidth * t_backBufferHeight, 1.0);
-
-	// draw to framebuffer
-	raster2d->t_backBuffer = frameBuffer_color;
-	raster2d->t_zBuffer = frameBuffer_z;
-	// cull front face
-	raster3d->cull_mode = 1;
-	//
-	mat4 model_cube1 = model;
-	dVertexShader->model = model_cube1;
-	mat4 lightView = lookAt(lightPos, lookatPos, vec3(0, 1, 0)); // look from light
-	mat4 projection_ortho = ortho(-20, 20, -20, 20, frustum_n, frustum_f);
-	mat4 lightSpaceMatrix = projection_ortho * lightView;
-	dVertexShader->lightSpaceMatrix = lightSpaceMatrix;
-	//DrawCube(raster3d, dVertexShader, dFragmentShader);
-	myModelObj->Draw_shadow(raster3d, dVertexShader, dFragmentShader);
-	vec3 cube2Pos(0.0, -2.0, 0.0);
-	mat4 model_cube2 = mat4(1.0);
-	model_cube2 = scale(model_cube2, 20, 0.01, 20);
-	model_cube2 = translate(model_cube2, cube2Pos);
-	model_cube2 = rotation * model_cube2;
-	dVertexShader->model = model_cube2;
-	DrawCube(raster3d, dVertexShader, dFragmentShader);
-	//
-	raster2d->t_backBuffer = t_backBuffer;
-	raster2d->t_zBuffer = t_zBuffer;
-	raster3d->cull_mode = 0;
-	
-	// draw to backbuffer
-	shadowVertexShader->model = model_cube1;
-	shadowVertexShader->view = view;
-	shadowVertexShader->projection = projection;
-	shadowVertexShader->lightSpaceMatrix = lightSpaceMatrix;
-	shadowFragmentShader->lightColor = lightColor;
-	shadowFragmentShader->lightPos = lightPos;
-	shadowFragmentShader->viewPos = viewPos;
-	shadowFragmentShader->depthMap = frameBuffer_z;
-	shadowFragmentShader->depthMapWidth = t_backBufferWidth;
-	shadowFragmentShader->depthMapHeight = t_backBufferHeight;
-	//DrawCube(raster3d, shadowVertexShader, shadowFragmentShader);
-	objVertexShader->model = model;
-	objVertexShader->view = view;
-	objVertexShader->projection = projection;
-	objFragmentShader->lightColor = lightColor;
-	objFragmentShader->lightPos = lightPos;
-	objFragmentShader->viewPos = viewPos;
-	myModelObj->Draw(raster3d, objVertexShader, objFragmentShader);
-	shadowVertexShader->model = model_cube2;
-	DrawCube(raster3d, shadowVertexShader, shadowFragmentShader);
-
-	////////////////////////
-
-	//// draw object
-	//objVertexShader->model = model;
-	//objVertexShader->view = view;
-	//objVertexShader->projection = projection;
-	//objFragmentShader->lightColor = lightColor;
-	//objFragmentShader->lightPos = lightPos;
-	//objFragmentShader->viewPos = viewPos;
-	//myModelObj->Draw(raster3d, objVertexShader, objFragmentShader);
-
-	//// draw object
 	//eMapVertexShader->model = model;
 	//eMapVertexShader->view = view;
 	//eMapVertexShader->projection = projection;
@@ -297,6 +254,86 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 	//cubeMapVertexShader->projection = projection;
 	//cubeMapFragmentShader->cubeMapTexture = cubeMapTexture;
 	//DrawSkyBox(raster3d, cubeMapVertexShader, cubeMapFragmentShader);
+
+	/******************************************/
+
+	/*** draw shadow ***/
+
+	//memset(frameBuffer_color, 0, t_backBufferWidth * t_backBufferHeight * sizeof(frameBuffer_color[0]));
+	//std::fill(frameBuffer_z, frameBuffer_z + t_backBufferWidth * t_backBufferHeight, 1.0);
+
+	//// draw to framebuffer
+	//raster2d->t_backBuffer = frameBuffer_color;
+	//raster2d->t_zBuffer = frameBuffer_z;
+	//// cull front face
+	//raster3d->cull_mode = 1;
+	////
+	//mat4 model_cube1 = model;
+	//dVertexShader->model = model_cube1;
+	//mat4 lightView = lookAt(lightPos, lookatPos, vec3(0, 1, 0)); // look from light
+	//mat4 projection_ortho = ortho(-20, 20, -20, 20, frustum_n, frustum_f);
+	//mat4 lightSpaceMatrix = projection_ortho * lightView;
+	//dVertexShader->lightSpaceMatrix = lightSpaceMatrix;
+	////DrawCube(raster3d, dVertexShader, dFragmentShader);
+	//myModelObj->Draw_shadow(raster3d, dVertexShader, dFragmentShader);
+	//vec3 cube2Pos(0.0, -2.0, 0.0);
+	//mat4 model_cube2 = mat4(1.0);
+	//model_cube2 = scale(model_cube2, 20, 0.01, 20);
+	//model_cube2 = translate(model_cube2, cube2Pos);
+	//model_cube2 = rotation * model_cube2;
+	//dVertexShader->model = model_cube2;
+	//DrawCube(raster3d, dVertexShader, dFragmentShader);
+	////
+	//raster2d->t_backBuffer = t_backBuffer;
+	//raster2d->t_zBuffer = t_zBuffer;
+	//raster3d->cull_mode = 0;
+	//
+	//// draw to backbuffer
+	//shadowVertexShader->model = model_cube1;
+	//shadowVertexShader->view = view;
+	//shadowVertexShader->projection = projection;
+	//shadowVertexShader->lightSpaceMatrix = lightSpaceMatrix;
+	//shadowFragmentShader->lightColor = lightColor;
+	//shadowFragmentShader->lightPos = lightPos;
+	//shadowFragmentShader->viewPos = viewPos;
+	//shadowFragmentShader->depthMap = frameBuffer_z;
+	//shadowFragmentShader->depthMapWidth = t_backBufferWidth;
+	//shadowFragmentShader->depthMapHeight = t_backBufferHeight;
+	////DrawCube(raster3d, shadowVertexShader, shadowFragmentShader);
+	//objVertexShader->model = model;
+	//objVertexShader->view = view;
+	//objVertexShader->projection = projection;
+	//objFragmentShader->lightColor = lightColor;
+	//objFragmentShader->lightPos = lightPos;
+	//objFragmentShader->viewPos = viewPos;
+	//myModelObj->Draw(raster3d, objVertexShader, objFragmentShader);
+	//shadowVertexShader->model = model_cube2;
+	//DrawCube(raster3d, shadowVertexShader, shadowFragmentShader);
+
+	/*********************************************/
+
+	//// draw object
+	//objVertexShader->model = model;
+	//objVertexShader->view = view;
+	//objVertexShader->projection = projection;
+	//objFragmentShader->lightColor = lightColor;
+	//objFragmentShader->lightPos = lightPos;
+	//objFragmentShader->viewPos = viewPos;
+	//myModelObj->Draw(raster3d, objVertexShader, objFragmentShader);
+
+	// pbr
+	pbrVertexShader->model = model;
+	pbrVertexShader->view = view;
+	pbrVertexShader->projection = projection;
+	pbrFragmentShader->lightColor = lightColor;
+	pbrFragmentShader->lightPos = lightPos;
+	pbrFragmentShader->viewPos = viewPos;
+	pbrFragmentShader->albedoMap = albedoTexture;
+	pbrFragmentShader->normalMap = normalTexture;
+	pbrFragmentShader->metallicMap = metallicTexture;
+	pbrFragmentShader->roughnessMap = roughnessTexture;
+	pbrFragmentShader->aoMap = aoTexture;
+	DrawSphere(raster3d, pbrVertexShader, pbrFragmentShader);
 }
 
 void DrawCube(Raster3d* raster3d, VertexShader* vShader, FragmentShader* fShader) {
@@ -407,7 +444,6 @@ void DrawCube(Raster3d* raster3d, VertexShader* vShader, FragmentShader* fShader
 	raster3d->DrawTriangle3D(vin1, vin3, vin4, vShader, fShader);
 }
 
-
 // since we "see" inside the skybox, use clockwise to prevent face culling
 void DrawSkyBox(Raster3d* raster3d, CubeMapVertexShader* vShader, CubeMapFragmentShader* fShader) {
 	
@@ -445,4 +481,87 @@ void DrawSkyBox(Raster3d* raster3d, CubeMapVertexShader* vShader, CubeMapFragmen
 
 	raster3d->DrawTriangle3D(vin2, vin7, vin6, vShader, fShader); // bottom
 	raster3d->DrawTriangle3D(vin2, vin3, vin7, vShader, fShader);
+}
+
+void DrawSphere(Raster3d* raster3d, VertexShader* vShader, FragmentShader* fShader) {
+	
+	std::vector<vec3> positions;
+	std::vector<vec2> uv;
+	std::vector<vec3> normals;
+	std::vector<unsigned int> indices;
+
+	const unsigned int X_SEGMENTS = 64;
+	const unsigned int Y_SEGMENTS = 64;
+	const float PI = 3.14159265359;
+	// xSegment: xz平面上从x轴正向开始逆时针遍历0-2pi
+	// ySegment：xy平面上从y轴正向开始顺时针遍历0-pi
+	// 综合起来就是在遍历球面上的所有点
+	// 对于2D材质而言，相当于长方形材质贴在球面上，xSegment和ySegment就是材质的xy坐标，从左上角开始，从左至右，从上至下遍历
+	for (unsigned int y = 0; y <= Y_SEGMENTS; ++y)
+	{
+		for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
+		{
+			float xSegment = (float)x / (float)X_SEGMENTS;
+			float ySegment = (float)y / (float)Y_SEGMENTS;
+			float xPos = std::cos(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+			float yPos = std::cos(ySegment * PI);
+			float zPos = std::sin(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+
+			positions.push_back(vec3(xPos, yPos, zPos));
+			uv.push_back(vec2(xSegment, ySegment));
+			normals.push_back(vec3(xPos, yPos, zPos));
+		}
+	}
+
+	// 为了拼凑出逆时针顺序的三角形，大部分顶点都在index中索引了多次
+	// odd 和 even 的情况拼出的是一个矩形，才可以完整显示
+	bool oddRow = false;
+	for (int y = 0; y < Y_SEGMENTS; ++y)
+	{
+		if (!oddRow) // even rows: y == 0, y == 2; and so on
+		{
+			for (int x = 0; x <= X_SEGMENTS; ++x)
+			{
+				indices.push_back(y * (X_SEGMENTS + 1) + x);
+				indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
+			}
+		}
+		else
+		{
+			for (int x = X_SEGMENTS; x >= 0; --x)
+			{
+				indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
+				indices.push_back(y * (X_SEGMENTS + 1) + x);
+			}
+		}
+		oddRow = !oddRow;
+	}
+
+	//std::cout << indices.size() << " " << positions.size() << std::endl;
+
+	// opengl GL_TRIANGLE_STRIP
+	for (int i = 0; i + 2 < indices.size(); i += 2)
+	{
+		int ind1 = indices[i], ind2 = indices[i + 1], ind3 = indices[i + 2], ind4 = indices[i + 3];
+
+		VS_in vin1;
+		vin1.texCoords = uv[ind1];
+		vin1.localPos = positions[ind1];
+		vin1.normal = normals[ind1];
+		VS_in vin2;
+		vin2.texCoords = uv[ind2];
+		vin2.localPos = positions[ind2];
+		vin2.normal = normals[ind2];
+		VS_in vin3;
+		vin3.texCoords = uv[ind3];
+		vin3.localPos = positions[ind3];
+		vin3.normal = normals[ind3];
+		VS_in vin4;
+		vin4.texCoords = uv[ind4];
+		vin4.localPos = positions[ind4];
+		vin4.normal = normals[ind4];
+		
+		raster3d->DrawTriangle3D(vin1, vin3, vin2, vShader, fShader);
+		raster3d->DrawTriangle3D(vin2, vin3, vin4, vShader, fShader);
+	}
 }

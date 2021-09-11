@@ -11,3 +11,5 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 
 void DrawCube(Raster3d* raster3d, VertexShader* vShader, FragmentShader* fShader);
 void DrawSkyBox(Raster3d* raster3d, CubeMapVertexShader* vShader, CubeMapFragmentShader* fShader);
+
+void DrawSphere(Raster3d* raster3d, VertexShader* vShader, FragmentShader* fShader);

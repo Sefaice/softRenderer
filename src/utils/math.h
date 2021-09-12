@@ -143,6 +143,10 @@ inline vec3 operator/(const vec3& v, float a) {
 	return vec3(v.x / a, v.y / a, v.z / a);
 }
 
+inline vec3 operator/(const vec3& v1, const vec3 &v2) {
+	return vec3(v1.x / v2.x, v1.y / v2.y, v1.z / v2.z);
+}
+
 inline vec3 operator*(const mat3& m, const vec3& v) {
 	return vec3(m.m[0][0] * v.x + m.m[1][0] * v.y + m.m[2][0] * v.z,
 		m.m[0][1] * v.x + m.m[1][1] * v.y + m.m[2][1] * v.z,
@@ -223,6 +227,10 @@ inline float dot(const vec3& v1, const vec3& v2) {
 
 inline vec3 cross(const vec3& v1, const vec3& v2) {
 	return vec3(v1.y * v2.z - v2.y * v1.z, v2.x * v1.z - v1.x * v2.z, v1.x * v2.y - v2.x * v1.y);
+}
+
+inline vec3 pow(const vec3& v1, const vec3& e) {
+	return vec3(pow(v1.x, e.x), pow(v1.y, e.y), pow(v1.z, e.z));
 }
 
 // 求反射向量的方向，v方向是从光源指向碰撞点，n必须为单位向量（v不用）

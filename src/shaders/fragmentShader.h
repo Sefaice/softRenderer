@@ -339,7 +339,7 @@ public:
 
 		vec3 albedo = albedoMap->sampleTex(texCoords);
 		// sRGB -> linear space
-		albedo = vec3(pow(albedo.x, 2.2), pow(albedo.y, 2.2), pow(albedo.z, 2.2));
+		albedo = pow(albedo, vec3(2.2));
 		vec3 norm = normalize(normal);
 		float metallic = metallicMap->sampleTex(texCoords).x;
 		float roughness = roughnessMap->sampleTex(texCoords).x;
@@ -378,9 +378,9 @@ public:
 		vec3 color = ambient + l;
 
 		// HDR tonemapping
-		color = vec3(color.x / (color.x + 1.0), color.y / (color.y + 1.0), color.z / (color.z + 1.0));
+		color = color / (color + vec3(1.0));
 		// gamma correct
-		color = vec3(pow(color.x, 1.0 / 2.2), pow(color.y, 1.0 / 2.2), pow(color.z, 1.0 / 2.2));
+		color = pow(color, vec3(1.0 / 2.2));
 
 		return color;
 	}
@@ -389,15 +389,16 @@ private:
 
 	// Trowbridge-Reitz GGX
 	float normalDistribution(vec3 n, vec3 h, float a) {
+		float a4 = pow(a, 4.0);
 		float nhDot = maxInTwo(dot(n, h), 0);
-		float denom = M_PI * pow(nhDot * nhDot * (a * a - 1.0) + 1.0, 2);
+		float denom = M_PI * pow(nhDot * nhDot * (a4 - 1.0) + 1.0, 2.0);
 
-		return a * a / maxInTwo(denom, 0.001); // prevent division by 0
+		return a4 / maxInTwo(denom, 0.001); // prevent division by 0
 	}
 
 	// Schlick-GGX
 	float geometrySub(vec3 n, vec3 v, float a) {
-		float k = pow(a + 1.0, 2) / 8.0;
+		float k = pow(a + 1.0, 2.0) / 8.0;
 		float nvDot = maxInTwo(dot(n, v), 0);
 
 		return nvDot / (nvDot * (1.0 - k) + k);
@@ -406,6 +407,6 @@ private:
 	// Fresnel Equation
 	vec3 fresnelEquation(vec3 h, vec3 v, vec3 F0) {
 		float hvDot = dot(h, v);
-		return F0 + (1 - F0) * pow(1 - hvDot, 5);
+		return F0 + (1 - F0) * pow(1 - hvDot, 5.0);
 	}
 };

@@ -42,7 +42,7 @@ float frustum_n = .1f;
 float frustum_f = 50.0f;
 
 // camera
-vec3 viewPos(0, 0, 10);
+vec3 viewPos(0, 0, 5);
 vec3 lookatPos(0, 0, 0);
 Camera* camera;
 
@@ -73,6 +73,13 @@ double* frameBuffer_z;
 
 // pbr textures
 Texture* albedoTexture, * normalTexture, * metallicTexture, * roughnessTexture, * aoTexture;
+
+// sphere
+std::vector<vec3> sphere_positions;
+std::vector<vec2> sphere_uv;
+std::vector<vec3> sphere_normals;
+std::vector<unsigned int> sphere_indices;
+bool sphere_init = false;
 
 void InitRenderer(uint32_t* backBuffer, double* zbuffer, int backBufferWidth, int backBufferHeight) {
 
@@ -206,7 +213,7 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 	model = scale(model, scaleFx + scrollOff / 10.0f);
 	//model = translate(model, vec3(6.0f * float(sin(t_dtime)), 0.0, 0.0));
 	//model = translate(model, vec3(0.0, -0.1, 0.0));
-	model = rotate(model, radians(90.0), vec3(1, 1, 1));
+	//model = rotate(model, radians(90.0), vec3(1, 1, 1));
 	//model = rotate(model, t_dtime / 4.0, vec3(1, 1, 1));
 	//model = rotate(model, sin(t_dtime), vec3(-1, 0, 0));
 	// focus camera
@@ -484,83 +491,79 @@ void DrawSkyBox(Raster3d* raster3d, CubeMapVertexShader* vShader, CubeMapFragmen
 }
 
 void DrawSphere(Raster3d* raster3d, VertexShader* vShader, FragmentShader* fShader) {
-	
-	std::vector<vec3> positions;
-	std::vector<vec2> uv;
-	std::vector<vec3> normals;
-	std::vector<unsigned int> indices;
 
-	const unsigned int X_SEGMENTS = 64;
-	const unsigned int Y_SEGMENTS = 64;
-	const float PI = 3.14159265359;
-	// xSegment: xz平面上从x轴正向开始逆时针遍历0-2pi
-	// ySegment：xy平面上从y轴正向开始顺时针遍历0-pi
-	// 综合起来就是在遍历球面上的所有点
-	// 对于2D材质而言，相当于长方形材质贴在球面上，xSegment和ySegment就是材质的xy坐标，从左上角开始，从左至右，从上至下遍历
-	for (unsigned int y = 0; y <= Y_SEGMENTS; ++y)
-	{
-		for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
+	if (!sphere_init) {
+		const unsigned int X_SEGMENTS = 32;
+		const unsigned int Y_SEGMENTS = 32;
+		const float PI = 3.14159265359;
+		// xSegment: xz face, counter-clockwise 0-2pi
+		// ySegment：xy face, clockwise 0-pi
+		// from top to down, from right to left
+		for (unsigned int y = 0; y <= Y_SEGMENTS; ++y)
 		{
-			float xSegment = (float)x / (float)X_SEGMENTS;
-			float ySegment = (float)y / (float)Y_SEGMENTS;
-			float xPos = std::cos(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
-			float yPos = std::cos(ySegment * PI);
-			float zPos = std::sin(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
-
-			positions.push_back(vec3(xPos, yPos, zPos));
-			uv.push_back(vec2(xSegment, ySegment));
-			normals.push_back(vec3(xPos, yPos, zPos));
-		}
-	}
-
-	// 为了拼凑出逆时针顺序的三角形，大部分顶点都在index中索引了多次
-	// odd 和 even 的情况拼出的是一个矩形，才可以完整显示
-	bool oddRow = false;
-	for (int y = 0; y < Y_SEGMENTS; ++y)
-	{
-		if (!oddRow) // even rows: y == 0, y == 2; and so on
-		{
-			for (int x = 0; x <= X_SEGMENTS; ++x)
+			for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
 			{
-				indices.push_back(y * (X_SEGMENTS + 1) + x);
-				indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
+				float xSegment = (float)x / (float)X_SEGMENTS;
+				float ySegment = (float)y / (float)Y_SEGMENTS;
+				float xPos = std::cos(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+				float yPos = std::cos(ySegment * PI);
+				float zPos = std::sin(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+
+				sphere_positions.push_back(vec3(xPos, yPos, zPos));
+				sphere_uv.push_back(vec2(xSegment, ySegment));
+				sphere_normals.push_back(vec3(xPos, yPos, zPos));
 			}
 		}
-		else
-		{
-			for (int x = X_SEGMENTS; x >= 0; --x)
-			{
-				indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
-				indices.push_back(y * (X_SEGMENTS + 1) + x);
-			}
-		}
-		oddRow = !oddRow;
-	}
 
-	//std::cout << indices.size() << " " << positions.size() << std::endl;
+		bool oddRow = false;
+		for (int y = 0; y < Y_SEGMENTS; ++y)
+		{
+			if (!oddRow) // even rows: y == 0, y == 2; and so on
+			{
+				for (int x = 0; x <= X_SEGMENTS; ++x)
+				{
+					sphere_indices.push_back(y * (X_SEGMENTS + 1) + x);
+					sphere_indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
+				}
+			}
+			else
+			{
+				for (int x = X_SEGMENTS; x >= 0; --x)
+				{
+					sphere_indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
+					sphere_indices.push_back(y * (X_SEGMENTS + 1) + x);
+				}
+			}
+			oddRow = !oddRow;
+		}
+
+		sphere_init = true;
+		//std::cout << indices.size() << " " << positions.size() << std::endl;
+	}
 
 	// opengl GL_TRIANGLE_STRIP
-	for (int i = 0; i + 2 < indices.size(); i += 2)
+	for (int i = 0; i + 2 < sphere_indices.size(); i += 2)
 	{
-		int ind1 = indices[i], ind2 = indices[i + 1], ind3 = indices[i + 2], ind4 = indices[i + 3];
+		int ind1 = sphere_indices[i], ind2 = sphere_indices[i + 1], ind3 = sphere_indices[i + 2], ind4 = sphere_indices[i + 3];
 
 		VS_in vin1;
-		vin1.texCoords = uv[ind1];
-		vin1.localPos = positions[ind1];
-		vin1.normal = normals[ind1];
+		vin1.texCoords = sphere_uv[ind1];
+		vin1.localPos = sphere_positions[ind1];
+		vin1.normal = sphere_normals[ind1];
 		VS_in vin2;
-		vin2.texCoords = uv[ind2];
-		vin2.localPos = positions[ind2];
-		vin2.normal = normals[ind2];
+		vin2.texCoords = sphere_uv[ind2];
+		vin2.localPos = sphere_positions[ind2];
+		vin2.normal = sphere_normals[ind2];
 		VS_in vin3;
-		vin3.texCoords = uv[ind3];
-		vin3.localPos = positions[ind3];
-		vin3.normal = normals[ind3];
+		vin3.texCoords = sphere_uv[ind3];
+		vin3.localPos = sphere_positions[ind3];
+		vin3.normal = sphere_normals[ind3];
 		VS_in vin4;
-		vin4.texCoords = uv[ind4];
-		vin4.localPos = positions[ind4];
-		vin4.normal = normals[ind4];
+		vin4.texCoords = sphere_uv[ind4];
+		vin4.localPos = sphere_positions[ind4];
+		vin4.normal = sphere_normals[ind4];
 		
+		// counter-clockwise, vectices are generated from right to left
 		raster3d->DrawTriangle3D(vin1, vin3, vin2, vShader, fShader);
 		raster3d->DrawTriangle3D(vin2, vin3, vin4, vShader, fShader);
 	}

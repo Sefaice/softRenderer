@@ -119,6 +119,19 @@ inline vec2 operator*(const vec2& v, float a) {
 	return vec2(v.x * a, v.y * a);
 }
 
+
+inline vec2 operator+(const vec2& v1, float a) {
+	return vec2(v1.x + a, v1.y + a);
+}
+
+inline vec2 operator+(const vec2& v1, const vec2& v2) {
+	return vec2(v1.x + v2.x, v1.y + v2.y);
+}
+
+inline vec2 operator*(const vec2& v1, const vec2& v2) {
+	return vec2(v1.x * v2.x, v1.y * v2.y);
+}
+
 inline vec3 operator-(const vec3& v) {
 	return vec3(-v.x, -v.y, -v.z);
 }
@@ -212,6 +225,10 @@ inline float maxInThree(float a, float b, float c) {
 
 inline float minInThree(float a, float b, float c) {
 	return a < b ? (a < c ? a : c) : (b < c ? b : c);
+}
+
+inline vec3 maxInTwo(const vec3& v1, const vec3& v2) {
+	return vec3(maxInTwo(v1.x, v2.x), maxInTwo(v1.y, v2.y), maxInTwo(v1.z, v2.z));
 }
 
 inline vec3 normalize(vec3& v) {

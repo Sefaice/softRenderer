@@ -190,7 +190,7 @@ private:
             }
 
             if (!skip) { // if texture hasn't been loaded already, load it
-                Texture* texture = new Texture((char*)fullpath.c_str(), typeName);
+                Texture* texture = new Texture((char*)fullpath.c_str(), typeName, 0);
                 
                 textures.push_back(texture);
                 textures_loaded.push_back(texture); // store it as texture loaded for entire model, to ensure we won't unnecesery load duplicate textures.
@@ -226,7 +226,7 @@ private:
 
             if (!skip) { // if texture hasn't been loaded already, load it
                 std::string typeName = "texture_" + type;
-                Texture* texture = new Texture((char*)fullpath.c_str(), typeName);
+                Texture* texture = new Texture((char*)fullpath.c_str(), typeName, 0);
 
                 textures.push_back(texture);
                 textures_loaded.push_back(texture); // store it as texture loaded for entire model, to ensure we won't unnecesery load duplicate textures.

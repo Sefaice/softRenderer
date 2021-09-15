@@ -21,8 +21,8 @@
 
 static HINSTANCE g_HInstance;
 static HWND g_Wnd;
-static HDC g_HWndDC; //handle to the device context of the main window
-static HDC g_HBackbufferDC;	//handle to the device context of the backbuffer
+static HDC g_HWndDC; // handle to the device context of the main window
+static HDC g_HBackbufferDC;	// handle to the device context of the backbuffer
 static HBITMAP g_BackbufferBitmap;
 
 #if SSAA // 4x SSAA
@@ -38,7 +38,7 @@ static const int g_BitmapWidth = WINDOW_WIDTH;
 static const int g_BitmapHeight = WINDOW_HEIGHT;
 
 static uint32_t* g_Backbuffer;
-static uint32_t* g_BackBitmapbuffer; // for SSAA
+static uint32_t* g_BackBitmapbuffer;
 static double* g_Zbuffer; // z buffer
 
 double g_dtime0;
@@ -52,6 +52,10 @@ float scrollOff = 0.0f;
 static void InitBackbufferBitmap();
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+// save image
+PBITMAPINFO CreateBitmapInfoStruct(HBITMAP);
+void CreateBMPFile(LPTSTR pszFile, HBITMAP hBMP);
 
 // program entry point
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow) {
@@ -253,6 +257,141 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 	return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
+PBITMAPINFO CreateBitmapInfoStruct(HBITMAP hBmp)
+{
+	BITMAP bmp;
+	PBITMAPINFO pbmi;
+	WORD    cClrBits;
+
+	// Retrieve the bitmap color format, width, and height.  
+	assert(GetObject(hBmp, sizeof(BITMAP), (LPSTR)&bmp));
+
+	// Convert the color format to a count of bits.  
+	cClrBits = (WORD)(bmp.bmPlanes * bmp.bmBitsPixel);
+	if (cClrBits == 1)
+		cClrBits = 1;
+	else if (cClrBits <= 4)
+		cClrBits = 4;
+	else if (cClrBits <= 8)
+		cClrBits = 8;
+	else if (cClrBits <= 16)
+		cClrBits = 16;
+	else if (cClrBits <= 24)
+		cClrBits = 24;
+	else cClrBits = 32;
+
+	// Allocate memory for the BITMAPINFO structure. (This structure  
+	// contains a BITMAPINFOHEADER structure and an array of RGBQUAD  
+	// data structures.)  
+
+	if (cClrBits < 24)
+		pbmi = (PBITMAPINFO)LocalAlloc(LPTR,
+			sizeof(BITMAPINFOHEADER) +
+			sizeof(RGBQUAD) * (1 << cClrBits));
+
+	// There is no RGBQUAD array for these formats: 24-bit-per-pixel or 32-bit-per-pixel 
+
+	else
+		pbmi = (PBITMAPINFO)LocalAlloc(LPTR,
+			sizeof(BITMAPINFOHEADER));
+
+	// Initialize the fields in the BITMAPINFO structure.  
+
+	pbmi->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+	pbmi->bmiHeader.biWidth = bmp.bmWidth;
+	pbmi->bmiHeader.biHeight = bmp.bmHeight;
+	pbmi->bmiHeader.biPlanes = bmp.bmPlanes;
+	pbmi->bmiHeader.biBitCount = bmp.bmBitsPixel;
+	if (cClrBits < 24)
+		pbmi->bmiHeader.biClrUsed = (1 << cClrBits);
+
+	// If the bitmap is not compressed, set the BI_RGB flag.  
+	pbmi->bmiHeader.biCompression = BI_RGB;
+
+	// Compute the number of bytes in the array of color  
+	// indices and store the result in biSizeImage.  
+	// The width must be DWORD aligned unless the bitmap is RLE 
+	// compressed. 
+	pbmi->bmiHeader.biSizeImage = ((pbmi->bmiHeader.biWidth * cClrBits + 31) & ~31) / 8
+		* pbmi->bmiHeader.biHeight;
+	// Set biClrImportant to 0, indicating that all of the  
+	// device colors are important.  
+	pbmi->bmiHeader.biClrImportant = 0;
+	return pbmi;
+}
+
+void CreateBMPFile(HBITMAP hBMP)
+{
+	HANDLE hf;                 // file handle  
+	BITMAPFILEHEADER hdr;       // bitmap file-header  
+	PBITMAPINFOHEADER pbih;     // bitmap info-header  
+	LPBYTE lpBits;              // memory pointer  
+	DWORD dwTotal;              // total count of bytes  
+	DWORD cb;                   // incremental count of bytes  
+	BYTE* hp;                   // byte pointer  
+	DWORD dwTmp;
+	PBITMAPINFO pbi;
+	HDC hDC;
+
+	hDC = CreateCompatibleDC(GetWindowDC(GetDesktopWindow()));
+	SelectObject(hDC, hBMP);
+
+	pbi = CreateBitmapInfoStruct(hBMP);
+
+	pbih = (PBITMAPINFOHEADER)pbi;
+	lpBits = (LPBYTE)GlobalAlloc(GMEM_FIXED, pbih->biSizeImage);
+
+	assert(lpBits);
+
+	// Retrieve the color table (RGBQUAD array) and the bits  
+	// (array of palette indices) from the DIB.  
+	assert(GetDIBits(hDC, hBMP, 0, (WORD)pbih->biHeight, lpBits, pbi,
+		DIB_RGB_COLORS));
+	
+	// Create the .BMP file.  
+	hf = CreateFile(L"../../src/res/pbr/loft/back.bmp",
+		GENERIC_READ | GENERIC_WRITE,
+		(DWORD)0,
+		NULL,
+		CREATE_ALWAYS,
+		FILE_ATTRIBUTE_NORMAL,
+		(HANDLE)NULL);
+	assert(hf != INVALID_HANDLE_VALUE);
+
+	hdr.bfType = 0x4d42;        // 0x42 = "B" 0x4d = "M"  
+	// Compute the size of the entire file.  
+	hdr.bfSize = (DWORD)(sizeof(BITMAPFILEHEADER) +
+		pbih->biSize + pbih->biClrUsed
+		* sizeof(RGBQUAD) + pbih->biSizeImage);
+	hdr.bfReserved1 = 0;
+	hdr.bfReserved2 = 0;
+
+	// Compute the offset to the array of color indices.  
+	hdr.bfOffBits = (DWORD)sizeof(BITMAPFILEHEADER) +
+		pbih->biSize + pbih->biClrUsed
+		* sizeof(RGBQUAD);
+
+	// Copy the BITMAPFILEHEADER into the .BMP file.  
+	assert(WriteFile(hf, (LPVOID)&hdr, sizeof(BITMAPFILEHEADER),
+		(LPDWORD)&dwTmp, NULL));
+
+	// Copy the BITMAPINFOHEADER and RGBQUAD array into the file.  
+	assert(WriteFile(hf, (LPVOID)pbih, sizeof(BITMAPINFOHEADER)
+		+ pbih->biClrUsed * sizeof(RGBQUAD),
+		(LPDWORD)&dwTmp, (NULL)));
+
+	// Copy the array of color indices into the .BMP file.  
+	dwTotal = cb = pbih->biSizeImage;
+	hp = lpBits;
+	assert(WriteFile(hf, (LPSTR)hp, (int)cb, (LPDWORD)&dwTmp, NULL));
+
+	// Close the .BMP file.  
+	assert(CloseHandle(hf));
+
+	// Free memory.  
+	GlobalFree((HGLOBAL)lpBits);
+}
+
 int main() {
 
 	/*mat4 m(.5);
@@ -283,40 +422,48 @@ int main() {
 	// init renderer
 	InitRenderer(g_Backbuffer, g_Zbuffer, g_BackbufferWidth, g_BackbufferHeight);
 
-	while (true) {
-		// time
-		LARGE_INTEGER time1;
-		QueryPerformanceCounter(&time1);
-		static int s_FrameCount = 0;
 
-		// call drawing main func
-		UpdateBackBuffer((time1.QuadPart - g_dtime0) / 10000000.0, cursorDown, curOffx, curOffy, scrollOff);
-		s_FrameCount++;
-		LARGE_INTEGER time2;
-		QueryPerformanceCounter(&time2);
+//	while (true) {
+//		// time
+//		LARGE_INTEGER time1;
+//		QueryPerformanceCounter(&time1);
+//		static int s_FrameCount = 0;
+//
+//		// call drawing main func
+//		UpdateBackBuffer((time1.QuadPart - g_dtime0) / 10000000.0, cursorDown, curOffx, curOffy, scrollOff);
+//		s_FrameCount++;
+//		LARGE_INTEGER time2;
+//		QueryPerformanceCounter(&time2);
+//
+//#if SSAA
+//		for (int i = 0; i < g_BitmapWidth; i++) {
+//			for (int j = 0; j < g_BitmapHeight; j++) {
+//				uint32_t r = 0, g = 0, b = 0;
+//				for (int k = 0; k < SSAA_LEVEL; k++) {
+//					for (int l = 0; l < SSAA_LEVEL; l++) {
+//						r += g_Backbuffer[(j * SSAA_LEVEL + l) * g_BackbufferWidth + i * SSAA_LEVEL + k] >> 16 & 0x000000FF;
+//						g += g_Backbuffer[(j * SSAA_LEVEL + l) * g_BackbufferWidth + i * SSAA_LEVEL + k] >> 8 & 0x000000FF;
+//						b += g_Backbuffer[(j * SSAA_LEVEL + l) * g_BackbufferWidth + i * SSAA_LEVEL + k] & 0x000000FF;
+//					}
+//				}
+//				r /= (SSAA_LEVEL * SSAA_LEVEL);
+//				g /= (SSAA_LEVEL * SSAA_LEVEL);
+//				b /= (SSAA_LEVEL * SSAA_LEVEL);
+//			
+//				g_BackBitmapbuffer[j * g_BitmapWidth + i] = b | (g << 8) | (r << 16);
+//			}
+//		}
+//#else
+//		memcpy(g_BackBitmapbuffer, g_Backbuffer, g_BackbufferWidth * g_BackbufferHeight * sizeof(g_Backbuffer[0]));
+//#endif
+//	}
 
-#if SSAA
-		for (int i = 0; i < g_BitmapWidth; i++) {
-			for (int j = 0; j < g_BitmapHeight; j++) {
-				uint32_t r = 0, g = 0, b = 0;
-				for (int k = 0; k < SSAA_LEVEL; k++) {
-					for (int l = 0; l < SSAA_LEVEL; l++) {
-						r += g_Backbuffer[(j * SSAA_LEVEL + l) * g_BackbufferWidth + i * SSAA_LEVEL + k] >> 16 & 0x000000FF;
-						g += g_Backbuffer[(j * SSAA_LEVEL + l) * g_BackbufferWidth + i * SSAA_LEVEL + k] >> 8 & 0x000000FF;
-						b += g_Backbuffer[(j * SSAA_LEVEL + l) * g_BackbufferWidth + i * SSAA_LEVEL + k] & 0x000000FF;
-					}
-				}
-				r /= (SSAA_LEVEL * SSAA_LEVEL);
-				g /= (SSAA_LEVEL * SSAA_LEVEL);
-				b /= (SSAA_LEVEL * SSAA_LEVEL);
-			
-				g_BackBitmapbuffer[j * g_BitmapWidth + i] = b | (g << 8) | (r << 16);
-			}
-		}
-#else
-		memcpy(g_BackBitmapbuffer, g_Backbuffer, g_BackbufferWidth * g_BackbufferHeight * sizeof(g_Backbuffer[0]));
-#endif
-	}
+
+	// save image
+	UpdateBackBuffer(0, cursorDown, curOffx, curOffy, scrollOff);
+	memcpy(g_BackBitmapbuffer, g_Backbuffer, g_BackbufferWidth * g_BackbufferHeight * sizeof(g_Backbuffer[0]));
+	CreateBMPFile(g_BackbufferBitmap);
+	std::cout << "done" << std::endl;
 
 	//system("pause");
 

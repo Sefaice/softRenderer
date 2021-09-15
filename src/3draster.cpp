@@ -70,10 +70,10 @@ void Raster3d::DrawTriangle2D(VS_out payload1, VS_out payload2, VS_out payload3,
 
 	// back face culling
 	float back_face = p1.x * p2.y - p2.x * p1.y + p2.x * p3.y - p3.x * p2.y + p3.x * p1.y - p1.x * p3.y; // < 0 back face, > 0 front face
-	if (cull_mode == 0 && back_face < 0) { // cull back face
+	if (cull_mode == 1 && back_face < 0) { // cull back face
 		return;
 	}
-	if (cull_mode == 1 && back_face > 0) { // cull front face
+	if (cull_mode == 2 && back_face > 0) { // cull front face
 		return;
 	}
 

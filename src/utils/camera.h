@@ -30,18 +30,18 @@ public:
     vec3 up;
     vec3 right;
     vec3 worldUp;
-    //// Euler Angles
-    //float Yaw;
-    //float Pitch;
     // Camera options
     float movementSpeed;
     float mouseSensitivity;
     float zoom;
+    //// Euler Angles
+    //float Yaw;
+    //float Pitch;
 
     // Constructor with vectors
     Camera(vec3 _position, vec3 _worldUp, vec3 _front)
-        //: Yaw(YAW), Pitch(PITCH), movementSpeed(SPEED), mouseSensitivity(SENSITIVITY), zoom(ZOOM)
         : movementSpeed(SPEED), mouseSensitivity(SENSITIVITY), zoom(ZOOM)
+        // Yaw(YAW), Pitch(PITCH),
     {
         position = _position;
         worldUp = _worldUp;

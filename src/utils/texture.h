@@ -13,18 +13,31 @@ public:
 	int texWidth;
 	int texHeight;
 
-	Texture(std::string _path, std::string _type) {
+	Texture(std::string _path, std::string _type, int _hdr) {
 		path = _path;
 		type = _type;
+		hdr = _hdr;
 
-		//texData = stbi_load(path.c_str(), &texWidth, &texHeight, &texNrChannels, 0);
-		texData = stbi_load(path.c_str(), &texWidth, &texHeight, &texNrChannels, 3); // for "gun" model
-		//std::cout << path << std::endl;
-		//printf("%d, %d %d %d\n", texWidth, texHeight, texNrChannels, sizeof(texData) / sizeof(unsigned char));
+		if (hdr == 0) {
+			//texData = stbi_load(path.c_str(), &texWidth, &texHeight, &texNrChannels, 0);
+			texData = stbi_load(path.c_str(), &texWidth, &texHeight, &texNrChannels, 3); // for "gun" model
+			//std::cout << path << std::endl;
+			//printf("%d, %d %d %d\n", texWidth, texHeight, texNrChannels, sizeof(texData) / sizeof(unsigned char));
 
-		if (!texData) {
-			std::cout << "Failed to load texture: " << path << std::endl;
-			//throw std::invalid_argument("Failed to load texture");
+			if (!texData) {
+				std::cout << "Failed to load texture: " << path << std::endl;
+				//throw std::invalid_argument("Failed to load texture");
+			}
+		}
+		else {
+			//stbi_set_flip_vertically_on_load(true);
+			hdrTexData = stbi_loadf(path.c_str(), &texWidth, &texHeight, &texNrChannels, 3);
+			/*std::cout << path << std::endl;
+			printf("%d, %d %d %d\n", texWidth, texHeight, texNrChannels, sizeof(hdrTexData) / sizeof(float));*/
+
+			if (!hdrTexData) {
+				std::cout << "Failed to load HDR image." << std::endl;
+			}
 		}
 	}
 
@@ -59,12 +72,22 @@ public:
 private:
 	int texNrChannels;
 	unsigned char* texData;
+	int hdr; // 1 for hdr texture
+	float* hdrTexData;
 
 	vec3 getColor(int texCoordsX, int texCoordsY) {
 		vec3 color;
-		color.x = texData[texCoordsY * 3 * texWidth + texCoordsX * 3] / 255.0;
-		color.y = texData[texCoordsY * 3 * texWidth + texCoordsX * 3 + 1] / 255.0;
-		color.z = texData[texCoordsY * 3 * texWidth + texCoordsX * 3 + 2] / 255.0;
+
+		if (hdr == 0) {
+			color.x = texData[texCoordsY * 3 * texWidth + texCoordsX * 3] / 255.0;
+			color.y = texData[texCoordsY * 3 * texWidth + texCoordsX * 3 + 1] / 255.0;
+			color.z = texData[texCoordsY * 3 * texWidth + texCoordsX * 3 + 2] / 255.0;
+		}
+		else {
+			color.x = hdrTexData[texCoordsY * 3 * texWidth + texCoordsX * 3];
+			color.y = hdrTexData[texCoordsY * 3 * texWidth + texCoordsX * 3 + 1];
+			color.z = hdrTexData[texCoordsY * 3 * texWidth + texCoordsX * 3 + 2];
+		}
 
 		return color;
 	}
@@ -75,12 +98,12 @@ public:
 	std::vector<Texture*> faces; // +x, -x, +y, -y, +z, -z
 
 	CubeMapTexture(std::string path) {
-		faces.push_back(new Texture(path + "/right.jpg", "texture_cubemap"));
-		faces.push_back(new Texture(path + "/left.jpg", "texture_cubemap"));
-		faces.push_back(new Texture(path + "/top.jpg", "texture_cubemap"));
-		faces.push_back(new Texture(path + "/bottom.jpg", "texture_cubemap"));
-		faces.push_back(new Texture(path + "/front.jpg", "texture_cubemap"));
-		faces.push_back(new Texture(path + "/back.jpg", "texture_cubemap"));
+		faces.push_back(new Texture(path + "/right.jpg", "texture_cubemap", 0));
+		faces.push_back(new Texture(path + "/left.jpg", "texture_cubemap", 0));
+		faces.push_back(new Texture(path + "/top.jpg", "texture_cubemap", 0));
+		faces.push_back(new Texture(path + "/bottom.jpg", "texture_cubemap", 0));
+		faces.push_back(new Texture(path + "/front.jpg", "texture_cubemap", 0));
+		faces.push_back(new Texture(path + "/back.jpg", "texture_cubemap", 0));
 	}
 
 	vec3 sampleCubeMap(vec3 texCoords) {

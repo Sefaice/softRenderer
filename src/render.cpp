@@ -37,12 +37,16 @@ ShadowFragmentShader* shadowFragmentShader;
 PBRVertexShader* pbrVertexShader;
 PBRFragmentShader* pbrFragmentShader;
 
+E2CFragmentShader* e2cFragmentShader;
+IrradianceFragmentShader* irrFragmentShader;
+IBLFragmentShader* iblFragmentShader;
+
 // view frustum
 float frustum_n = .1f;
 float frustum_f = 50.0f;
 
 // camera
-vec3 viewPos(0, 0, 5);
+vec3 viewPos(0, 0, 15);
 vec3 lookatPos(0, 0, 0);
 Camera* camera;
 
@@ -74,6 +78,10 @@ double* frameBuffer_z;
 // pbr textures
 Texture* albedoTexture, * normalTexture, * metallicTexture, * roughnessTexture, * aoTexture;
 
+// ibl
+Texture* hdrTexture;
+CubeMapTexture* irrTexture;
+
 // sphere
 std::vector<vec3> sphere_positions;
 std::vector<vec2> sphere_uv;
@@ -92,9 +100,6 @@ void InitRenderer(uint32_t* backBuffer, double* zbuffer, int backBufferWidth, in
 
 	camera = new Camera(viewPos, vec3(0, 1, 0), normalize(lookatPos - viewPos));
 
-	vertexShader = new PhongVertexShader();
-	fragmentShader = new PhongFragmentShader();
-
 	objVertexShader = new ObjVertexShader();
 	objFragmentShader = new ObjFragmentShader();
 
@@ -110,6 +115,11 @@ void InitRenderer(uint32_t* backBuffer, double* zbuffer, int backBufferWidth, in
 
 	pbrVertexShader = new PBRVertexShader();
 	pbrFragmentShader = new PBRFragmentShader();
+
+	vertexShader = new PhongVertexShader();
+	e2cFragmentShader = new E2CFragmentShader();
+	irrFragmentShader = new IrradianceFragmentShader();
+	iblFragmentShader = new IBLFragmentShader();
 
 	// load objects
 	//// obj-loader
@@ -180,8 +190,6 @@ void InitRenderer(uint32_t* backBuffer, double* zbuffer, int backBufferWidth, in
 	//	global_h.to_mesh(verticesVector, verticesVector_quad);
 	//}
 
-	//cubeMapTexture = new CubeMapTexture("../../src/res/skyboxes/lake");
-
 	//// framebuffer
 	//frameBuffer_color = new uint32_t[t_backBufferWidth * t_backBufferHeight];
 	//memset(frameBuffer_color, 0, t_backBufferWidth * t_backBufferHeight * sizeof(frameBuffer_color[0]));
@@ -189,11 +197,17 @@ void InitRenderer(uint32_t* backBuffer, double* zbuffer, int backBufferWidth, in
 	//std::fill(frameBuffer_z, frameBuffer_z + t_backBufferWidth * t_backBufferHeight, 1.0);
 
 	// pbr textures
-	albedoTexture = new Texture("../../src/res/pbr/albedo.png", "");
-	normalTexture = new Texture("../../src/res/pbr/normal.png", "");
-	metallicTexture = new Texture("../../src/res/pbr/metallic.png", "");
-	roughnessTexture = new Texture("../../src/res/pbr/roughness.png", "");
-	aoTexture = new Texture("../../src/res/pbr/ao.png", "");
+	albedoTexture = new Texture("../../src/res/pbr/albedo.png", "", 0);
+	normalTexture = new Texture("../../src/res/pbr/normal.png", "", 0);
+	metallicTexture = new Texture("../../src/res/pbr/metallic.png", "", 0);
+	roughnessTexture = new Texture("../../src/res/pbr/roughness.png", "", 0);
+	aoTexture = new Texture("../../src/res/pbr/ao.png", "", 0);
+
+	// ibl
+	//hdrTexture = new Texture("../../src/res/pbr/loft/loft.hdr", "", 1);
+	//cubeMapTexture = new CubeMapTexture("../../src/res/skyboxes/lake");
+	cubeMapTexture = new CubeMapTexture("../../src/res/skyboxes/loft");
+	irrTexture = new CubeMapTexture("../../src/res/pbr/loft/irradiance");
 }
 
 void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, float scrollOff) {
@@ -216,6 +230,7 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 	//model = rotate(model, radians(90.0), vec3(1, 1, 1));
 	//model = rotate(model, t_dtime / 4.0, vec3(1, 1, 1));
 	//model = rotate(model, sin(t_dtime), vec3(-1, 0, 0));
+
 	// focus camera
 	if (cursorDown) {
 		vec3 rotateAxis = cross(normalize(vec3(curOffx, curOffy, 0)), camera->front);
@@ -273,7 +288,7 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 	//raster2d->t_backBuffer = frameBuffer_color;
 	//raster2d->t_zBuffer = frameBuffer_z;
 	//// cull front face
-	//raster3d->cull_mode = 1;
+	//raster3d->cull_mode = 2;
 	////
 	//mat4 model_cube1 = model;
 	//dVertexShader->model = model_cube1;
@@ -293,7 +308,7 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 	////
 	//raster2d->t_backBuffer = t_backBuffer;
 	//raster2d->t_zBuffer = t_zBuffer;
-	//raster3d->cull_mode = 0;
+	//raster3d->cull_mode = 2;
 	//
 	//// draw to backbuffer
 	//shadowVertexShader->model = model_cube1;
@@ -328,19 +343,45 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 	//objFragmentShader->viewPos = viewPos;
 	//myModelObj->Draw(raster3d, objVertexShader, objFragmentShader);
 
-	// pbr
+	//// pbr
+	//pbrVertexShader->model = model;
+	//pbrVertexShader->view = view;
+	//pbrVertexShader->projection = projection;
+	//pbrFragmentShader->lightColor = lightColor;
+	//pbrFragmentShader->lightPos = lightPos;
+	//pbrFragmentShader->viewPos = viewPos;
+	//pbrFragmentShader->albedoMap = albedoTexture;
+	//pbrFragmentShader->normalMap = normalTexture;
+	//pbrFragmentShader->metallicMap = metallicTexture;
+	//pbrFragmentShader->roughnessMap = roughnessTexture;
+	//pbrFragmentShader->aoMap = aoTexture;
+	//DrawSphere(raster3d, pbrVertexShader, pbrFragmentShader);
+
+	
+	//iblPreCompute();
+
+	// ibl
 	pbrVertexShader->model = model;
 	pbrVertexShader->view = view;
 	pbrVertexShader->projection = projection;
-	pbrFragmentShader->lightColor = lightColor;
-	pbrFragmentShader->lightPos = lightPos;
-	pbrFragmentShader->viewPos = viewPos;
-	pbrFragmentShader->albedoMap = albedoTexture;
-	pbrFragmentShader->normalMap = normalTexture;
-	pbrFragmentShader->metallicMap = metallicTexture;
-	pbrFragmentShader->roughnessMap = roughnessTexture;
-	pbrFragmentShader->aoMap = aoTexture;
-	DrawSphere(raster3d, pbrVertexShader, pbrFragmentShader);
+	iblFragmentShader->lightColor = lightColor;
+	iblFragmentShader->lightPos = lightPos;
+	iblFragmentShader->viewPos = viewPos;
+	iblFragmentShader->albedoMap = albedoTexture;
+	iblFragmentShader->normalMap = normalTexture;
+	iblFragmentShader->metallicMap = metallicTexture;
+	iblFragmentShader->roughnessMap = roughnessTexture;
+	iblFragmentShader->aoMap = aoTexture;
+	iblFragmentShader->irradianceMap = irrTexture;
+	DrawSphere(raster3d, pbrVertexShader, iblFragmentShader);
+
+	// draw skybox
+	view = matrix4(matrix3(view));
+	cubeMapVertexShader->view = view;
+	cubeMapVertexShader->projection = projection;
+	cubeMapFragmentShader->cubeMapTexture = cubeMapTexture;
+	//cubeMapFragmentShader->cubeMapTexture = irrTexture;
+	DrawSkyBox(raster3d, cubeMapVertexShader, cubeMapFragmentShader);
 }
 
 void DrawCube(Raster3d* raster3d, VertexShader* vShader, FragmentShader* fShader) {
@@ -567,4 +608,32 @@ void DrawSphere(Raster3d* raster3d, VertexShader* vShader, FragmentShader* fShad
 		raster3d->DrawTriangle3D(vin1, vin3, vin2, vShader, fShader);
 		raster3d->DrawTriangle3D(vin2, vin3, vin4, vShader, fShader);
 	}
+}
+
+void iblPreCompute() {
+	raster3d->cull_mode = 0;
+
+	mat4 captureProjection = perspective(90.0f, 1.0f, 0.1f, 10.0f);
+	mat4 captureViews[] =
+	{
+	   lookAt(vec3(0.0f, 0.0f, 0.0f), vec3(1.0f,  0.0f,  0.0f), vec3(0.0f, -1.0f,  0.0f)),
+	   lookAt(vec3(0.0f, 0.0f, 0.0f), vec3(-1.0f, 0.0f,  0.0f), vec3(0.0f, -1.0f,  0.0f)),
+	   lookAt(vec3(0.0f, 0.0f, 0.0f), vec3(0.0f,  1.0f,  0.0f), vec3(0.0f,  0.0f,  1.0f)),
+	   lookAt(vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, -1.0f,  0.0f), vec3(0.0f,  0.0f, -1.0f)),
+	   lookAt(vec3(0.0f, 0.0f, 0.0f), vec3(0.0f,  0.0f,  1.0f), vec3(0.0f, -1.0f,  0.0f)),
+	   lookAt(vec3(0.0f, 0.0f, 0.0f), vec3(0.0f,  0.0f, -1.0f), vec3(0.0f, -1.0f,  0.0f))
+	};
+	vertexShader->model = mat4(1.0);
+	vertexShader->view = captureViews[5];
+	vertexShader->projection = captureProjection;
+
+	////render from equirectangularMap to cubemap and save as bitmap
+	//e2cFragmentShader->equirectangularMap = hdrTexture;
+	//DrawCube(raster3d, vertexShader, e2cFragmentShader);
+
+	// pre compute irradiance from cubemap
+	irrFragmentShader->cubeMapTexture = cubeMapTexture;
+	DrawCube(raster3d, vertexShader, irrFragmentShader);
+
+	raster3d->cull_mode = 1;
 }

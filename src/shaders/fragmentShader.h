@@ -103,7 +103,7 @@ public:
 		//// phong
 		//vec3 reflectDir = reflect(-lightDir, norm);
 		//reflectDir = normalize(reflectDir);
-		//float spec = pow(maxInTwo(dot(viewDir, reflectDir), 0.0), 16);
+		//float spec = pow(max(dot(viewDir, reflectDir), 0.0), 16);
 		// blinn-phong
 		vec3 halfwayDir = lightDir + viewDir;
 		halfwayDir = normalize(halfwayDir);
@@ -159,7 +159,7 @@ public:
 		//// phong
 		//vec3 reflectDir = reflect(-lightDir, norm);
 		//reflectDir = normalize(reflectDir);
-		//float spec = pow(maxInTwo(dot(viewDir, reflectDir), 0.0), 16);
+		//float spec = pow(max(dot(viewDir, reflectDir), 0.0), 16);
 		// blinn-phong
 		vec3 halfwayDir = lightDir + viewDir;
 		halfwayDir = normalize(halfwayDir);
@@ -184,6 +184,10 @@ public:
 		vec3 cubeMapTexCoords = fin.cubeMapTexCoords;
 
 		vec3 color = cubeMapTexture->sampleCubeMap(cubeMapTexCoords);
+
+		//// HDR tonemap and gamma correct
+		//color = color / (color + vec3(1.0));
+		//color = pow(color, vec3(1.0 / 2.2));
 
 		return color;
 	}
@@ -377,7 +381,7 @@ public:
 
 		vec3 color = ambient + l;
 
-		// HDR tonemapping
+		// reinhard HDR tonemapping
 		color = color / (color + vec3(1.0));
 		// gamma correct
 		color = pow(color, vec3(1.0 / 2.2));
@@ -385,7 +389,7 @@ public:
 		return color;
 	}
 
-private:
+protected:
 
 	// Trowbridge-Reitz GGX
 	float normalDistribution(vec3 n, vec3 h, float a) {
@@ -406,7 +410,172 @@ private:
 
 	// Fresnel Equation
 	vec3 fresnelEquation(vec3 h, vec3 v, vec3 F0) {
-		float hvDot = dot(h, v);
+		float hvDot = maxInTwo(dot(h, v), 0);
 		return F0 + (1 - F0) * pow(1 - hvDot, 5.0);
+	}
+};
+
+// equirectangularMap to cubemap
+class E2CFragmentShader : public FragmentShader {
+	// FS_in:
+	//     vec3 worldPos
+public:
+	Texture* equirectangularMap;
+	const vec2 invAtan = vec2(0.1591, 0.3183);
+
+	vec3 shading(FS_in fin) {
+		vec3 worldPos = fin.worldPos;
+
+		vec2 uv = SampleSphericalMap(normalize(worldPos)); // make sure to normalize localPos
+		vec3 texColor = equirectangularMap->sampleTex(uv);
+
+		vec3 color = texColor;
+
+		// reinhard HDR tonemapping
+		color = color / (color + vec3(1.0));
+		// gamma correct
+		color = pow(color, vec3(1.0 / 2.2));
+
+		return color;
+	}
+
+private:
+	vec2 SampleSphericalMap(vec3 v)
+	{
+		vec2 uv = vec2(atan2(v.z, v.x), asin(v.y));
+		uv = uv * invAtan;
+		uv = uv + 0.5;
+		return uv;
+	}
+};
+
+// pre-compute irradiance
+class IrradianceFragmentShader : public FragmentShader {
+	// FS_in:
+	//     vec3 worldPos
+public:
+	CubeMapTexture* cubeMapTexture;
+
+	vec3 shading(FS_in fin) {
+		vec3 worldPos = fin.worldPos;
+
+		vec3 normal = normalize(worldPos);
+		vec3 up = vec3(0, 1, 0);
+		/*vec3 right = normalize(cross(up, normal));
+		up = normalize(cross(normal, right));*/
+		vec3 right = (cross(up, normal));
+		up = (cross(normal, right));
+
+		vec3 irradiance = vec3(0.0);
+
+		float sampleDelta = 0.025;
+		int nrSamples = 0;
+		for (float phi = 0.0; phi < 2.0 * M_PI; phi += sampleDelta)
+		{
+			for (float theta = 0.0; theta < 0.5 * M_PI; theta += sampleDelta)
+			{
+				vec3 tangentSample = vec3(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta));
+				vec3 sampleVec = tangentSample.x * right + tangentSample.y * up + tangentSample.z * normal;
+
+				irradiance = irradiance + cubeMapTexture->sampleCubeMap(sampleVec) * cos(theta) * sin(theta);
+				nrSamples++;
+			}
+		}
+
+		irradiance = M_PI * irradiance / float(nrSamples);
+
+		vec3 color = irradiance;
+
+		return color;
+	}
+};
+
+class IBLFragmentShader : public PBRFragmentShader {
+	// FS_in:
+	//     vec2 texCoords
+	//     vec3 normal
+	//     vec3 worldPos
+public:
+	CubeMapTexture* irradianceMap;
+
+	vec3 shading(FS_in fin) {
+		vec2 texCoords = fin.texCoords;
+		vec3 normal = fin.normal;
+		vec3 worldPos = fin.worldPos;
+
+		vec3 albedo = albedoMap->sampleTex(texCoords);
+		// sRGB -> linear space
+		albedo = pow(albedo, vec3(2.2));
+		vec3 norm = normalize(normal);
+		float metallic = metallicMap->sampleTex(texCoords).x;
+		float roughness = roughnessMap->sampleTex(texCoords).x;
+		float ao = aoMap->sampleTex(texCoords).x;
+
+		metallic = 0.5;
+		roughness = 0.5;
+		albedo = vec3(0.5, 0, 0);
+		ao = 1.0;
+
+		vec3 viewDir = viewPos - worldPos;
+		viewDir = normalize(viewDir);
+		vec3 lightDir = lightPos - worldPos;
+		lightDir = normalize(lightDir);
+
+		/********* direct light *********/
+
+		// radiance
+		vec3 h = normalize(viewDir + lightDir);
+		float distance = (lightPos - worldPos).length();
+		float attenuation = 1.0 / (distance * distance);
+		vec3 radiance = lightColor * attenuation;
+
+		// BRDF
+		float D = normalDistribution(norm, h, roughness);
+		float G = geometrySub(norm, viewDir, roughness) * geometrySub(norm, lightDir, roughness); //  Smith's method
+		vec3 F0 = lerp(vec3(0.04), albedo, metallic);
+		vec3 F = fresnelEquation(h, viewDir, F0);
+
+		float nvDot = maxInTwo(dot(norm, viewDir), 0);
+		float nlDot = maxInTwo(dot(norm, lightDir), 0);
+		float denom = 4 * nvDot * nlDot;
+		float specular = D * G / maxInTwo(denom, 0.001);
+
+		vec3 ks = F;
+		vec3 kd = vec3(1.0) - ks;
+		kd = kd * vec3(1.0 - metallic); // metallic do not have diffuse
+
+		vec3 l = (kd * albedo / M_PI + ks * specular) * radiance * nlDot;
+
+		/**************************************************/
+
+
+		/********* ambient indirect light *********/
+
+		//vec3 am_ks = fresnelEquationRoughness(norm, viewDir, F0, roughness);
+		vec3 am_ks = fresnelEquation(norm, viewDir, F0);
+		vec3 am_kd = 1.0 - am_ks;
+		am_kd = am_kd * (1.0 - metallic);
+		vec3 am_irradiance = irradianceMap->sampleCubeMap(norm);
+		vec3 am_diffuse = am_irradiance * albedo;
+		vec3 ambient = am_kd * am_diffuse * ao;
+
+		/**************************************************/
+
+		vec3 color = ambient + l;
+
+		// reinhard HDR tonemapping
+		color = color / (color + vec3(1.0));
+		// gamma correct
+		color = pow(color, vec3(1.0 / 2.2));
+
+		return color;
+	}
+
+private:
+
+	// Fresnel Equation with roughness for ambient lighting
+	vec3 fresnelEquationRoughness(vec3 n, vec3 v, vec3 F0, float a) {
+		float nvDot = maxInTwo(dot(n, v), 0);
+		return F0 + (maxInTwo(vec3(1.0 - a), F0) - F0) * pow(1.0 - nvDot, 5.0);
 	}
 };

@@ -7,8 +7,9 @@
 
 class Raster3d {
 public:
-
-	int cull_mode = 0; // 0 for cull back face, 1 for cull front face
+	unsigned int t_backBufferWidth;
+	unsigned int t_backBufferHeight;
+	int cull_mode = 0; // 0 null, 1 for cull back face, 2 for cull front face
 
 	Raster3d(Raster2d* raster2d, float frustum_n, float frustum_f,
 		unsigned int t_backBufferWidth, unsigned int t_backBufferHeight, bool polygon_mode);
@@ -29,8 +30,6 @@ private:
 	float t_frustum_f;
 	float t_frustum_nf1; // for DrawTriangle3D rasterization
 	float t_frustum_nf2;
-	unsigned int t_backBufferWidth;
-	unsigned int t_backBufferHeight;
 	bool t_polygon_mode;
 };
 

@@ -208,7 +208,6 @@ public:
 	}
 };
 
-
 class PBRVertexShader : public VertexShader {
 	// VS_in:
 	//     vec2 texCoords
@@ -234,6 +233,24 @@ public:
 		vout.pos = pos;
 		vout.normal = worldNormal;
 		vout.worldPos = worldPos;
+		vout.texCoords = texCoords;
+
+		return vout;
+	}
+};
+
+// BRDF integration 
+class BRDFInteVertexShader : public VertexShader {
+public:
+	VS_out shading(VS_in vin) {
+
+		vec2 texCoords = vin.texCoords;
+		vec3 localPos = vin.localPos;
+
+		vec4 pos = vec4(localPos, 1.0);
+
+		VS_out vout;
+		vout.pos = pos;
 		vout.texCoords = texCoords;
 
 		return vout;

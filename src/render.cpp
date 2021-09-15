@@ -39,6 +39,9 @@ PBRFragmentShader* pbrFragmentShader;
 
 E2CFragmentShader* e2cFragmentShader;
 IrradianceFragmentShader* irrFragmentShader;
+PreFilterFragmentShader* preFilterFragmentShader;
+BRDFInteVertexShader* brdfInteVertexShader;
+BRDFInteFragmentShader* brdfInteFragmentShader;
 IBLFragmentShader* iblFragmentShader;
 
 // view frustum
@@ -46,7 +49,7 @@ float frustum_n = .1f;
 float frustum_f = 50.0f;
 
 // camera
-vec3 viewPos(0, 0, 15);
+vec3 viewPos(0, 0, 8);
 vec3 lookatPos(0, 0, 0);
 Camera* camera;
 
@@ -55,7 +58,7 @@ mat4 rotation = mat4(1.0f);
 float scaleFx = 1.0f;
 
 // light
-vec3 lightPos(.0f, .0f, 5.0f);
+vec3 lightPos(.0f, .0f, 10.0f);
 //vec3 lightColor(.7f, .7f, .7f);
 vec3 lightColor(150.0f, 150.0f, 150.0f); // pbr
 mat4 model_tmp; // use model for lighting temporarily
@@ -76,11 +79,15 @@ uint32_t* frameBuffer_color;
 double* frameBuffer_z;
 
 // pbr textures
-Texture* albedoTexture, * normalTexture, * metallicTexture, * roughnessTexture, * aoTexture;
+Texture* a_albedoTexture, * a_normalTexture, * a_metallicTexture, * a_roughnessTexture, * a_aoTexture;
+Texture* b_albedoTexture, * b_normalTexture, * b_metallicTexture, * b_roughnessTexture, * b_aoTexture;
+Texture* c_albedoTexture, * c_normalTexture, * c_metallicTexture, * c_roughnessTexture, * c_aoTexture;
 
 // ibl
 Texture* hdrTexture;
 CubeMapTexture* irrTexture;
+CubeMapTexture* prefilterTexture;
+Texture* brdfLUT;
 
 // sphere
 std::vector<vec3> sphere_positions;
@@ -119,6 +126,9 @@ void InitRenderer(uint32_t* backBuffer, double* zbuffer, int backBufferWidth, in
 	vertexShader = new PhongVertexShader();
 	e2cFragmentShader = new E2CFragmentShader();
 	irrFragmentShader = new IrradianceFragmentShader();
+	preFilterFragmentShader = new PreFilterFragmentShader();
+	brdfInteVertexShader = new BRDFInteVertexShader();
+	brdfInteFragmentShader = new BRDFInteFragmentShader();
 	iblFragmentShader = new IBLFragmentShader();
 
 	// load objects
@@ -197,17 +207,31 @@ void InitRenderer(uint32_t* backBuffer, double* zbuffer, int backBufferWidth, in
 	//std::fill(frameBuffer_z, frameBuffer_z + t_backBufferWidth * t_backBufferHeight, 1.0);
 
 	// pbr textures
-	albedoTexture = new Texture("../../src/res/pbr/albedo.png", "", 0);
-	normalTexture = new Texture("../../src/res/pbr/normal.png", "", 0);
-	metallicTexture = new Texture("../../src/res/pbr/metallic.png", "", 0);
-	roughnessTexture = new Texture("../../src/res/pbr/roughness.png", "", 0);
-	aoTexture = new Texture("../../src/res/pbr/ao.png", "", 0);
+	a_albedoTexture = new Texture("../../src/res/pbr/rusted_iron/albedo.png", "", 0);
+	a_normalTexture = new Texture("../../src/res/pbr/rusted_iron/normal.png", "", 0);
+	a_metallicTexture = new Texture("../../src/res/pbr/rusted_iron/metallic.png", "", 0);
+	a_roughnessTexture = new Texture("../../src/res/pbr/rusted_iron/roughness.png", "", 0);
+	a_aoTexture = new Texture("../../src/res/pbr/rusted_iron/ao.png", "", 0);
+
+	b_albedoTexture = new Texture("../../src/res/pbr/gold/albedo.png", "", 0);
+	b_normalTexture = new Texture("../../src/res/pbr/gold/normal.png", "", 0);
+	b_metallicTexture = new Texture("../../src/res/pbr/gold/metallic.png", "", 0);
+	b_roughnessTexture = new Texture("../../src/res/pbr/gold/roughness.png", "", 0);
+	b_aoTexture = new Texture("../../src/res/pbr/gold/ao.png", "", 0);
+
+	c_albedoTexture = new Texture("../../src/res/pbr/plastic/albedo.png", "", 0);
+	c_normalTexture = new Texture("../../src/res/pbr/plastic/normal.png", "", 0);
+	c_metallicTexture = new Texture("../../src/res/pbr/plastic/metallic.png", "", 0);
+	c_roughnessTexture = new Texture("../../src/res/pbr/plastic/roughness.png", "", 0);
+	c_aoTexture = new Texture("../../src/res/pbr/plastic/ao.png", "", 0);
 
 	// ibl
 	//hdrTexture = new Texture("../../src/res/pbr/loft/loft.hdr", "", 1);
 	//cubeMapTexture = new CubeMapTexture("../../src/res/skyboxes/lake");
-	cubeMapTexture = new CubeMapTexture("../../src/res/skyboxes/loft");
-	irrTexture = new CubeMapTexture("../../src/res/pbr/loft/irradiance");
+	cubeMapTexture = new CubeMapTexture("../../src/res/skyboxes/loft", false);
+	irrTexture = new CubeMapTexture("../../src/res/pbr/loft/irradiance", false);
+	prefilterTexture = new CubeMapTexture("../../src/res/pbr/loft/prefilter_0.1", false);
+	brdfLUT = new Texture("../../src/res/pbr/brdf_lut.png", "", 0);
 }
 
 void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, float scrollOff) {
@@ -357,31 +381,55 @@ void UpdateBackBuffer(double dt, bool cursorDown, int curOffx, int curOffy, floa
 	//pbrFragmentShader->aoMap = aoTexture;
 	//DrawSphere(raster3d, pbrVertexShader, pbrFragmentShader);
 
-	
 	//iblPreCompute();
 
 	// ibl
-	pbrVertexShader->model = model;
+	
 	pbrVertexShader->view = view;
 	pbrVertexShader->projection = projection;
 	iblFragmentShader->lightColor = lightColor;
 	iblFragmentShader->lightPos = lightPos;
 	iblFragmentShader->viewPos = viewPos;
-	iblFragmentShader->albedoMap = albedoTexture;
-	iblFragmentShader->normalMap = normalTexture;
-	iblFragmentShader->metallicMap = metallicTexture;
-	iblFragmentShader->roughnessMap = roughnessTexture;
-	iblFragmentShader->aoMap = aoTexture;
 	iblFragmentShader->irradianceMap = irrTexture;
+	iblFragmentShader->prefilterMap = prefilterTexture;
+	iblFragmentShader->brdfLUT = brdfLUT;
+	
+	mat4 tmodel = translate(model, vec3(-3.0, 0.0, 0.0));
+	pbrVertexShader->model = tmodel;
+	iblFragmentShader->albedoMap = a_albedoTexture;
+	iblFragmentShader->normalMap = a_normalTexture;
+	iblFragmentShader->metallicMap = a_metallicTexture;
+	iblFragmentShader->roughnessMap = a_roughnessTexture;
+	iblFragmentShader->aoMap = a_aoTexture;
+	DrawSphere(raster3d, pbrVertexShader, iblFragmentShader);
+
+	pbrVertexShader->model = model;
+	iblFragmentShader->albedoMap = b_albedoTexture;
+	iblFragmentShader->normalMap = b_normalTexture;
+	iblFragmentShader->metallicMap = b_metallicTexture;
+	iblFragmentShader->roughnessMap = b_roughnessTexture;
+	iblFragmentShader->aoMap = b_aoTexture;
+	DrawSphere(raster3d, pbrVertexShader, iblFragmentShader);
+
+	tmodel = translate(model, vec3(3.0, 0.0, 0.0));
+	pbrVertexShader->model = tmodel;
+	iblFragmentShader->albedoMap = c_albedoTexture;
+	iblFragmentShader->normalMap = c_normalTexture;
+	iblFragmentShader->metallicMap = c_metallicTexture;
+	iblFragmentShader->roughnessMap = c_roughnessTexture;
+	iblFragmentShader->aoMap = c_aoTexture;
 	DrawSphere(raster3d, pbrVertexShader, iblFragmentShader);
 
 	// draw skybox
 	view = matrix4(matrix3(view));
 	cubeMapVertexShader->view = view;
 	cubeMapVertexShader->projection = projection;
-	cubeMapFragmentShader->cubeMapTexture = cubeMapTexture;
+	//cubeMapFragmentShader->cubeMapTexture = cubeMapTexture;
 	//cubeMapFragmentShader->cubeMapTexture = irrTexture;
+	prefilterTexture->bilinear = true; // hack the stem
+	cubeMapFragmentShader->cubeMapTexture = prefilterTexture;
 	DrawSkyBox(raster3d, cubeMapVertexShader, cubeMapFragmentShader);
+	prefilterTexture->bilinear = false;
 }
 
 void DrawCube(Raster3d* raster3d, VertexShader* vShader, FragmentShader* fShader) {
@@ -624,16 +672,38 @@ void iblPreCompute() {
 	   lookAt(vec3(0.0f, 0.0f, 0.0f), vec3(0.0f,  0.0f, -1.0f), vec3(0.0f, -1.0f,  0.0f))
 	};
 	vertexShader->model = mat4(1.0);
-	vertexShader->view = captureViews[5];
+	vertexShader->view = captureViews[4];
 	vertexShader->projection = captureProjection;
 
 	////render from equirectangularMap to cubemap and save as bitmap
 	//e2cFragmentShader->equirectangularMap = hdrTexture;
 	//DrawCube(raster3d, vertexShader, e2cFragmentShader);
 
-	// pre compute irradiance from cubemap
-	irrFragmentShader->cubeMapTexture = cubeMapTexture;
-	DrawCube(raster3d, vertexShader, irrFragmentShader);
+	//// pre compute irradiance from cubemap
+	//irrFragmentShader->cubeMapTexture = cubeMapTexture;
+	//DrawCube(raster3d, vertexShader, irrFragmentShader);
+
+	//// pre filter environment map
+	//preFilterFragmentShader->cubeMapTexture = cubeMapTexture;
+	//DrawCube(raster3d, vertexShader, preFilterFragmentShader);
+
+	// BRDF integration
+	VS_in vin1;
+	vin1.texCoords = vec2(0, 1);
+	vin1.localPos = vec3(-1.0, 1.0, 0.0);
+	VS_in vin2;
+	vin2.texCoords = vec2(0, 0);
+	vin2.localPos = vec3(-1.0, -1.0, 0.0);
+	VS_in vin3;
+	vin3.texCoords = vec2(1, 1);
+	vin3.localPos = vec3(1.0, 1.0, 0.0);
+	vin3.normal = vec3(0, 0, 1);
+	VS_in vin4;
+	vin4.texCoords = vec2(1, 0);
+	vin4.localPos = vec3(1.0, -1.0, 0.0);
+	vin4.normal = vec3(0, 0, 1);
+	raster3d->DrawTriangle3D(vin1, vin2, vin3, brdfInteVertexShader, brdfInteFragmentShader);
+	raster3d->DrawTriangle3D(vin2, vin4, vin3, brdfInteVertexShader, brdfInteFragmentShader);
 
 	raster3d->cull_mode = 1;
 }

@@ -5,17 +5,16 @@ softRenderer
   * Wu's line algorithm
 * 2D triangle rasterization
   * line equation method
-  * barycentric method(optimized)
+  * barycentric method
 * 3D triangle rasterization
-  * model, view, projection transform
+  * MVP transformation
   * clip & tessellation
-  * perspective division
-  * viewport transform
+  * perspective division, viewport transform
   * back-face culling
   * z buffer
   * top-left rule
   * polygon mode
-  * vertex z interpolation & other attributes interpolation
+  * perspective correct interpolation
 * lighting
   * programmable shader
   * texture mapping
@@ -23,10 +22,16 @@ softRenderer
   * normal mapping
   * skybox
   * shadow mapping
+* PBR
+* IBL
 * SSAA
 * model loading
 * Catmull-Clark subdivision with half-edge
 * multi-thread parallel optimization
+
+image based lighting:
+
+![ibl](./imgs/ibl.PNG)
 
 model loading and lighting model:
 
@@ -37,10 +42,6 @@ model loading and lighting model:
 shadow mapping with PCF:
 
 ![shadow mapping](./imgs/shadow.PNG)
-
-skybox and environment mapping:
-
-![skybox and environment mapping](./imgs/skybox.PNG)
 
 Catmull-Clark subdivision with half-edge:
 

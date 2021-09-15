@@ -16,7 +16,7 @@
 //#define WINDOW_WIDTH 1280	
 //#define WINDOW_HEIGHT 720
 
-#define SSAA 0
+#define SSAA 1
 #define SSAA_LEVEL 2 // SSAA_LEVEL^2 x SSAA
 
 static HINSTANCE g_HInstance;
@@ -349,7 +349,7 @@ void CreateBMPFile(HBITMAP hBMP)
 		DIB_RGB_COLORS));
 	
 	// Create the .BMP file.  
-	hf = CreateFile(L"../../src/res/pbr/loft/back.bmp",
+	hf = CreateFile(L"../../src/res/pbr/loft/brdf.bmp",
 		GENERIC_READ | GENERIC_WRITE,
 		(DWORD)0,
 		NULL,
@@ -421,7 +421,6 @@ int main() {
 
 	// init renderer
 	InitRenderer(g_Backbuffer, g_Zbuffer, g_BackbufferWidth, g_BackbufferHeight);
-
 
 //	while (true) {
 //		// time

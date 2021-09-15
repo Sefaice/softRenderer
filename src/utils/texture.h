@@ -96,14 +96,17 @@ private:
 class CubeMapTexture {
 public:
 	std::vector<Texture*> faces; // +x, -x, +y, -y, +z, -z
+	bool bilinear = false;
 
-	CubeMapTexture(std::string path) {
+	CubeMapTexture(std::string path, bool _bilinear) {
 		faces.push_back(new Texture(path + "/right.jpg", "texture_cubemap", 0));
 		faces.push_back(new Texture(path + "/left.jpg", "texture_cubemap", 0));
 		faces.push_back(new Texture(path + "/top.jpg", "texture_cubemap", 0));
 		faces.push_back(new Texture(path + "/bottom.jpg", "texture_cubemap", 0));
 		faces.push_back(new Texture(path + "/front.jpg", "texture_cubemap", 0));
 		faces.push_back(new Texture(path + "/back.jpg", "texture_cubemap", 0));
+
+		bilinear = _bilinear;
 	}
 
 	vec3 sampleCubeMap(vec3 texCoords) {
@@ -153,9 +156,13 @@ public:
 			}
 		}
 
-		u = 0.5f * (uc / ma + 1.0f); 
+		u = 0.5f * (uc / ma + 1.0f);
 		v = 0.5f * (vc / ma + 1.0f);
+		//v = 0.5f * (-vc / ma + 1.0f);
 
-		return faces[faceInd]->sampleTex(vec2(u, v));
+		if (!bilinear)
+			return faces[faceInd]->sampleTex(vec2(u, v));
+		else
+			return faces[faceInd]->sampleTex_bilinear(vec2(u, v));
 	}
 };
